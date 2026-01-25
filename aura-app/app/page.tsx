@@ -1,82 +1,29 @@
-"use client";
-import { useEffect } from "react";
-import Image from "next/image";
-import { Wallet } from "@coinbase/onchainkit/wallet";
-import { useMiniKit } from "@coinbase/onchainkit/minikit";
-// import { useQuickAuth } from "@coinbase/onchainkit/minikit";
-import styles from "./page.module.css";
+'use client';
 
 export default function Home() {
-  // If you need to verify the user's identity, you can use the useQuickAuth hook.
-  // This hook will verify the user's signature and return the user's FID. You can update
-  // this to meet your needs. See the /app/api/auth/route.ts file for more details.
-  // Note: If you don't need to verify the user's identity, you can get their FID and other user data
-  // via `useMiniKit().context?.user`.
-  // const { data, isLoading, error } = useQuickAuth<{
-  //   userFid: string;
-  // }>("/api/auth");
-
-  const { setMiniAppReady, isMiniAppReady } = useMiniKit();
-
-  useEffect(() => {
-    if (!isMiniAppReady) {
-      setMiniAppReady();
-    }
-  }, [setMiniAppReady, isMiniAppReady]);
-
   return (
-    <div className={styles.container}>
-      <header className={styles.headerWrapper}>
-        <Wallet />
-      </header>
-
-      <div className={styles.content}>
-        <Image
-          priority
-          src="/sphere.svg"
-          alt="Sphere"
-          width={200}
-          height={200}
-        />
-        <h1 className={styles.title}>MiniKit</h1>
-
-        <p>
-          Get started by editing <code>app/page.tsx</code>
+    <main className="flex min-h-screen flex-col items-center justify-center bg-black text-white p-4">
+      <div className="z-10 w-full max-w-md text-center space-y-8">
+        <h1 className="text-6xl font-bold tracking-tighter animate-pulse">
+          AURA PULSE
+        </h1>
+        <p className="text-gray-400 text-lg uppercase tracking-widest">
+          Onchain Daily Ritual
         </p>
+        
+        <div className="py-10">
+          <button 
+            onClick={() => alert('Syncing your vibe...')}
+            className="px-8 py-4 border border-white hover:bg-white hover:text-black transition-all duration-300 font-bold uppercase tracking-tighter"
+          >
+            Check your Aura
+          </button>
+        </div>
 
-        <h2 className={styles.componentsTitle}>Explore Components</h2>
-
-        <ul className={styles.components}>
-          {[
-            {
-              name: "Transaction",
-              url: "https://docs.base.org/onchainkit/transaction/transaction",
-            },
-            {
-              name: "Swap",
-              url: "https://docs.base.org/onchainkit/swap/swap",
-            },
-            {
-              name: "Checkout",
-              url: "https://docs.base.org/onchainkit/checkout/checkout",
-            },
-            {
-              name: "Wallet",
-              url: "https://docs.base.org/onchainkit/wallet/wallet",
-            },
-            {
-              name: "Identity",
-              url: "https://docs.base.org/onchainkit/identity/identity",
-            },
-          ].map((component) => (
-            <li key={component.name}>
-              <a target="_blank" rel="noreferrer" href={component.url}>
-                {component.name}
-              </a>
-            </li>
-          ))}
-        </ul>
+        <div className="text-xs text-gray-600 uppercase pt-20">
+          Connected to Base Ecosystem
+        </div>
       </div>
-    </div>
+    </main>
   );
 }
