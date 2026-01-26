@@ -26,7 +26,13 @@ export default function Home() {
   const { isConnected, address, chainId } = useAccount();
   const { switchChain } = useSwitchChain();
   const { sendTransaction } = useSendTransaction();
-  const { data: txCount } = useTransactionCount({ address, chainId: base.id });
+  
+  // Добавляем refetch для синхронизации после транзакции
+  const { data: txCount, refetch: refetchTxCount } = useTransactionCount({ 
+    address, 
+    chainId: base.id,
+    query: { enabled: !!address }
+  });
   
   const [stage, setStage] = useState<'idle' | 'syncing' | 'synced'>('idle');
   const [splash, setSplash] = useState(false);
@@ -41,19 +47,25 @@ export default function Home() {
 
   const generativeText = useMemo(() => {
     if (!isConnected) return "";
-    return `Resonance confirmed. Your ${txCount || 0} steps on Base have stabilized your frequency. Your ${myMood.trait} aura is currently dominant.`;
+    return `Resonance confirmed. Your ${txCount || 0} onchain steps have stabilized your frequency. Your ${myMood.trait} aura is currently dominant.`;
   }, [isConnected, myMood, txCount]);
 
   const handleCheckAura = async () => {
     if (!isConnected || !address) return;
     if (chainId !== base.id) { switchChain({ chainId: base.id }); return; }
+    
     setStage('syncing');
+    
     sendTransaction({
       to: address as `0x${string}`,
       value: parseEther('0'),
       data: '0x417572612050756c73652052697475616c' as `0x${string}`,
     }, {
-      onSuccess: () => setStage('synced'),
+      onSuccess: async () => {
+        // Ждем мгновение и обновляем счетчик транзакций до смены стейджа
+        await refetchTxCount();
+        setStage('synced');
+      },
       onError: () => setStage('idle'),
     });
   };
@@ -68,7 +80,6 @@ export default function Home() {
   const triggerImpulse = (friendAddr: string) => {
     const currentCount = impulseStats[friendAddr] || 0;
     if (currentCount >= 2) return;
-
     setSplash(true);
     setImpulseStats(prev => ({ ...prev, [friendAddr]: currentCount + 1 }));
     setTimeout(() => setSplash(false), 800);
@@ -146,72 +157,63 @@ export default function Home() {
 
       <style jsx global>{`
         body { background: #000; color: #fff; margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; }
-        .mystic-bg { position: absolute; inset: 0; background: radial-gradient(circle at 50% 30%, var(--color) 0%, #000 100%); opacity: 0.15; transition: 2s; }
+        .mystic-bg { position: absolute; inset: 0; background: radial-gradient(circle at 50% 30%, var(--color) 0%, #000 100%); opacity: 0.2; transition: 2s; }
         .ui-wrapper { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; padding: 25px; box-sizing: border-box; }
         .header { display: flex; justify-content: flex-end; width: 100%; }
 
-        /* ВЫСОКОКОНТРАСТНЫЙ КОШЕЛЕК */
-        .vibrant-wallet { background: #fff !important; color: #000 !important; border-radius: 100px !important; padding: 10px 24px !important; border: none !important; transition: 0.3s !important; box-shadow: 0 0 20px rgba(255,255,255,0.2) !important; }
-        .vibrant-name { color: #000 !important; font-weight: 800 !important; margin-left: 10px !important; }
+        /* ВЫСОКОКОНТРАСТНЫЙ КОШЕЛЕК - ФИКС ЦВЕТА */
+        .vibrant-wallet { background: #fff !important; border-radius: 100px !important; padding: 10px 24px !important; border: none !important; box-shadow: 0 0 25px rgba(255,255,255,0.3) !important; }
+        .vibrant-name { color: #000 !important; font-weight: 900 !important; margin-left: 10px !important; }
 
         .ritual-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
         .aura-focus { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
-        .core { width: 70px; height: 70px; background: #fff; border-radius: 50%; box-shadow: 0 0 60px var(--glow); transition: 1.5s cubic-bezier(0.4, 0, 0.2, 1); z-index: 5; }
-        .core.active { transform: scale(1.4); }
+        .core { width: 75px; height: 75px; background: #fff; border-radius: 50%; box-shadow: 0 0 60px var(--glow); transition: 1.5s cubic-bezier(0.4, 0, 0.2, 1); z-index: 5; }
+        .core.active { transform: scale(1.45); filter: brightness(1.2); }
+        
         .core.splash { animation: splashEffect 0.8s ease-out; }
-
         @keyframes splashEffect {
-          0% { transform: scale(1.4); box-shadow: 0 0 60px var(--glow); }
-          50% { transform: scale(2.4); box-shadow: 0 0 160px var(--glow); filter: brightness(1.8); }
-          100% { transform: scale(1.4); box-shadow: 0 0 60px var(--glow); }
+          0% { transform: scale(1.45); box-shadow: 0 0 60px var(--glow); }
+          50% { transform: scale(2.8); box-shadow: 0 0 200px var(--glow); filter: brightness(2); }
+          100% { transform: scale(1.45); box-shadow: 0 0 60px var(--glow); }
         }
 
-        .rings span { position: absolute; inset: 0; border: 1px solid var(--glow); border-radius: 50%; opacity: 0; animation: waves 4s infinite linear; }
-        @keyframes waves { 0% { transform: scale(0.6); opacity: 0.8; } 100% { transform: scale(2.6); opacity: 0; } }
+        .rings span { position: absolute; inset: 0; border: 1.5px solid var(--glow); border-radius: 50%; opacity: 0; animation: waves 4s infinite linear; }
+        @keyframes waves { 0% { transform: scale(0.6); opacity: 0.9; } 100% { transform: scale(3); opacity: 0; } }
 
-        .mood-card { opacity: 0; transform: translateY(20px); transition: 1s ease; margin: 30px 0; max-width: 320px; }
+        .mood-card { opacity: 0; transform: translateY(25px); transition: 1.2s ease; margin: 30px 0; max-width: 320px; }
         .mood-card.visible { opacity: 1; transform: translateY(0); }
-        .description { font-size: 0.9rem; color: #bbb; margin-bottom: 25px; font-style: italic; line-height: 1.6; }
-        .share-btn { background: #fff; color: #000; border: none; padding: 14px 35px; border-radius: 100px; font-size: 11px; font-weight: 900; cursor: pointer; }
+        .description { font-size: 0.95rem; color: #eee; margin-bottom: 25px; font-style: italic; line-height: 1.6; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        .share-btn { background: #fff; color: #000; border: none; padding: 15px 40px; border-radius: 100px; font-size: 11px; font-weight: 900; cursor: pointer; letter-spacing: 1px; transition: 0.3s; }
+        .share-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255,255,255,0.2); }
 
-        .title { font-size: 2.4rem; font-weight: 200; letter-spacing: 14px; margin: 10px 0; }
-        .subtitle { font-size: 10px; color: #555; letter-spacing: 4px; text-transform: uppercase; }
-        .ritual-btn { margin-top: 40px; background: #fff; color: #000; border: none; padding: 20px 60px; border-radius: 100px; font-weight: 900; cursor: pointer; }
+        .title { font-size: 2.6rem; font-weight: 200; letter-spacing: 16px; margin: 15px 0; text-shadow: 0 0 30px rgba(255,255,255,0.2); }
+        .subtitle { font-size: 11px; color: #888; letter-spacing: 5px; text-transform: uppercase; }
+        .ritual-btn { margin-top: 45px; background: #fff; color: #000; border: none; padding: 22px 65px; border-radius: 100px; font-weight: 900; cursor: pointer; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: 0.3s; }
 
-        /* ПРЕМИАЛЬНЫЙ SOCIAL PANEL */
-        .social-panel { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 35px; padding: 25px; margin-top: auto; backdrop-filter: blur(20px); }
-        .panel-label { font-size: 10px; text-transform: uppercase; letter-spacing: 4px; color: #888; margin-bottom: 20px; display: block; font-weight: 700; }
-        .friends-grid { display: flex; flex-direction: column; gap: 12px; }
-        .friend-card { display: flex; align-items: center; background: rgba(255,255,255,0.03); padding: 15px 20px; border-radius: 25px; cursor: pointer; transition: 0.3s; border: 1px solid rgba(255,255,255,0.05); }
-        .friend-card:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
+        /* ПРЕМИАЛЬНЫЙ SOCIAL PANEL - БОЛЬШЕ ЯРКОСТИ */
+        .social-panel { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 35px; padding: 25px; margin-top: auto; backdrop-filter: blur(25px); }
+        .panel-label { font-size: 11px; text-transform: uppercase; letter-spacing: 4px; color: #fff; opacity: 0.6; margin-bottom: 20px; display: block; font-weight: 700; }
+        .friend-card { display: flex; align-items: center; background: rgba(0,0,0,0.4); padding: 16px 22px; border-radius: 25px; cursor: pointer; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1); }
+        .friend-card:hover { background: rgba(255,255,255,0.1); border-color: #fff; }
         
-        /* МЕРЦАЮЩИЕ ОГОНЬКИ ВМЕСТО АВАТАРОК */
-        .orb-container { position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
+        /* МЕРЦАЮЩИЕ ОГОНЬКИ */
         .flicker-orb { 
-          width: 32px; height: 32px; border-radius: 50%; z-index: 2; 
+          width: 34px; height: 34px; border-radius: 50%; z-index: 2; 
           background: radial-gradient(circle at 30% 30%, #fff, var(--orb-color)); 
-          box-shadow: inset -4px -4px 10px rgba(0,0,0,0.5);
-          animation: orbFlicker 2.5s infinite alternate ease-in-out;
+          box-shadow: 0 0 15px var(--orb-color);
+          animation: orbFlicker 2s infinite alternate ease-in-out;
         }
         .orb-glow-layer { 
-          position: absolute; inset: -4px; border-radius: 50%; z-index: 1; 
-          background: var(--orb-color); filter: blur(12px); opacity: 0.6;
-          animation: orbGlowPulse 3s infinite alternate ease-in-out;
+          position: absolute; inset: -6px; border-radius: 50%; z-index: 1; 
+          background: var(--orb-color); filter: blur(15px); opacity: 0.7;
+          animation: orbGlowPulse 2.5s infinite alternate ease-in-out;
         }
 
-        @keyframes orbFlicker {
-          0% { transform: scale(0.95) rotate(0deg); filter: brightness(1); }
-          100% { transform: scale(1.1) rotate(15deg); filter: brightness(1.3); }
-        }
-        @keyframes orbGlowPulse {
-          0% { opacity: 0.4; transform: scale(0.8); }
-          100% { opacity: 0.8; transform: scale(1.3); }
-        }
+        @keyframes orbFlicker { 0% { transform: scale(0.9); filter: brightness(1); } 100% { transform: scale(1.15); filter: brightness(1.4); } }
+        @keyframes orbGlowPulse { 0% { opacity: 0.3; transform: scale(0.8); } 100% { opacity: 0.9; transform: scale(1.4); } }
 
-        .friend-details { margin-left: 18px; text-align: left; }
-        .friend-name-text { font-size: 15px; font-weight: 800; color: #fff; display: block; }
-        .charge-text { font-size: 10px; color: #999; letter-spacing: 1px; margin-top: 4px; display: block; font-weight: 600; }
-        .empty-status { font-size: 12px; color: #555; font-style: italic; }
+        .friend-name-text { font-size: 16px; font-weight: 900; color: #fff; display: block; }
+        .charge-text { font-size: 10px; color: #fff; opacity: 0.5; letter-spacing: 1px; margin-top: 5px; display: block; font-weight: 700; }
       `}</style>
     </main>
   );
