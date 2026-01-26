@@ -7,7 +7,6 @@ import { useAccount, useSendTransaction, useSwitchChain, useTransactionCount } f
 import { base } from 'wagmi/chains';
 import { parseEther } from 'viem';
 
-// --- 12 МИСТИЧЕСКИХ СОСТОЯНИЙ ---
 const AURA_MOODS = [
   { name: 'VIOLET NEBULA', color: '#a855f7', trait: 'Intuitive' },
   { name: 'CYBER EMERALD', color: '#10b981', trait: 'Stable' },
@@ -169,7 +168,7 @@ export default function Home() {
         .mood-card h2 { font-size: 1.5rem; letter-spacing: 6px; margin-bottom: 8px; font-weight: 200; }
         .description { font-size: 0.85rem; color: #888; line-height: 1.6; font-style: italic; margin-bottom: 25px; }
         .share-btn { background: #fff; color: #000; border: none; padding: 12px 30px; border-radius: 100px; font-size: 10px; font-weight: 700; letter-spacing: 2px; cursor: pointer; transition: 0.3s; }
-        .share-btn:hover { transform: scale(1.05); }
+        .share-btn:hover { background: #eee; }
         .title { font-size: 2.4rem; font-weight: 200; letter-spacing: 14px; margin: 10px 0; }
         .subtitle { font-size: 0.6rem; color: #444; letter-spacing: 4px; text-transform: uppercase; }
         .ritual-btn { margin-top: 40px; background: #fff; color: #000; border: none; padding: 18px 55px; border-radius: 100px; font-weight: 800; letter-spacing: 2px; cursor: pointer; }
@@ -178,4 +177,8 @@ export default function Home() {
         .label { font-size: 9px; text-transform: uppercase; letter-spacing: 3px; color: #444; margin-bottom: 15px; display: block; }
         .friends-list { display: flex; flex-direction: column; gap: 10px; }
         .friend-row { display: flex; align-items: center; background: rgba(0,0,0,0.3); padding: 12px 20px; border-radius: 25px; cursor: pointer; transition: 0.3s; }
-        .
+        .friend-row:hover { border: 1px solid #fff; background: rgba(255,255,255,0.05); }
+      `}</style>
+    </main>
+  );
+}
