@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ConnectWallet, Wallet, WalletDropdown, WalletDropdownDisconnect } from '@coinbase/onchainkit/wallet';
 import { Identity, Avatar, Name, Address } from '@coinbase/onchainkit/identity';
 import { useAccount, useSendTransaction, useSwitchChain, useTransactionCount } from 'wagmi';
@@ -32,7 +32,6 @@ export default function Home() {
   const [stage, setStage] = useState<'idle' | 'syncing' | 'synced'>('idle');
   const [impulseTarget, setImpulseTarget] = useState<string | null>(null);
 
-  // Вычисляем Ауру: Адрес + Дата + Кол-во транзакций
   const myMood = useMemo(() => {
     if (!address) return AURA_MOODS[0];
     const dateSeed = new Date().toDateString();
@@ -42,7 +41,6 @@ export default function Home() {
     return AURA_MOODS[index];
   }, [address, txCount]);
 
-  // Генератор сообщения (Имитация ИИ)
   const generativeText = useMemo(() => {
     if (!isConnected) return "";
     const now = new Date();
@@ -71,10 +69,7 @@ export default function Home() {
   const handleCheckAura = async () => {
     if (!isConnected || !address) return;
     if (chainId !== base.id) { switchChain({ chainId: base.id }); return; }
-    
     setStage('syncing');
-    
-    // Транзакция с Hex-меткой "Aura Pulse Ritual"
     sendTransaction({
       to: address as `0x${string}`,
       value: parseEther('0'),
@@ -88,15 +83,8 @@ export default function Home() {
   const handleShare = () => {
     const appUrl = window.location.origin;
     const shareText = `My current aura on Base: ${myMood.name}\n\n"${generativeText}"\n\nCheck yours at`;
-    
-    // Передаем параметры в URL, чтобы API/OG отрисовал нужную картинку
     const shareUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(shareText)}&embeds[]=${encodeURIComponent(appUrl + '?aura=' + myMood.name + '&color=' + encodeURIComponent(myMood.color))}`;
     window.open(shareUrl, '_blank');
-  };
-
-  const sendVisualImpulse = (target: string) => {
-    setImpulseTarget(target); // Безгазовый интерактив
-    setTimeout(() => setImpulseTarget(null), 2000);
   };
 
   return (
@@ -119,7 +107,7 @@ export default function Home() {
         <section className="ritual-main">
           <div className="aura-focus">
             <div className={`core ${stage === 'synced' ? 'active' : ''}`} style={{ '--glow': myMood.color } as React.CSSProperties}></div>
-            <div className="waves" style={{ '--glow': myMood.color } as React.CSSProperties}>
+            <div className="rings" style={{ '--glow': myMood.color } as React.CSSProperties}>
               <span></span><span></span><span></span>
             </div>
           </div>
@@ -149,7 +137,7 @@ export default function Home() {
               { addr: '0x838aD0EAE54F99F1926dA7C3b6bFbF617389B4D9', color: '#10b981' },
               { addr: '0x02feeb0AdE57b6adEEdE5A4EEea6Cf8c21BeB6B1', color: '#ec4899' }
             ].map(f => (
-              <div key={f.addr} className="friend-row" onClick={() => sendVisualImpulse(f.addr)}>
+              <div key={f.addr} className="friend-row" onClick={() => { setImpulseTarget(f.addr); setTimeout(() => setImpulseTarget(null), 2000); }}>
                 <Avatar address={f.addr as `0x${string}`} className="h-10 w-10 border" style={{borderColor: f.color}} />
                 <div className="ml-3 text-left">
                   <Name address={f.addr as `0x${string}`} className="text-sm font-bold block" />
@@ -172,16 +160,16 @@ export default function Home() {
         .aura-focus { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
         .core { width: 70px; height: 70px; background: #fff; border-radius: 50%; box-shadow: 0 0 60px var(--glow); transition: 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
         .core.active { transform: scale(1.5); filter: brightness(1.2); box-shadow: 0 0 100px var(--glow); }
-        .waves span { position: absolute; inset: 0; border: 1px solid var(--glow); border-radius: 50%; opacity: 0; animation: waves 4s infinite linear; }
-        .waves span:nth-child(2) { animation-delay: 1.3s; }
-        .waves span:nth-child(3) { animation-delay: 2.6s; }
+        .rings span { position: absolute; inset: 0; border: 1px solid var(--glow); border-radius: 50%; opacity: 0; animation: waves 4s infinite linear; }
+        .rings span:nth-child(2) { animation-delay: 1.3s; }
+        .rings span:nth-child(3) { animation-delay: 2.6s; }
         @keyframes waves { 0% { transform: scale(0.6); opacity: 0.8; } 100% { transform: scale(2.6); opacity: 0; } }
-        .mood-card { opacity: 0; transform: translateY(20px); transition: 1.2s ease; margin: 25px 0; max-width: 300px; }
+        .mood-card { opacity: 0; transform: translateY(20px); transition: 1.2s ease; margin: 25px 0; max-width: 300px; display: flex; flex-direction: column; align-items: center; }
         .mood-card.visible { opacity: 1; transform: translateY(0); }
         .mood-card h2 { font-size: 1.5rem; letter-spacing: 6px; margin-bottom: 8px; font-weight: 200; }
         .description { font-size: 0.85rem; color: #888; line-height: 1.6; font-style: italic; margin-bottom: 25px; }
-        .share-btn { background: rgba(255,255,255,0.06); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 12px 30px; border-radius: 100px; font-size: 10px; font-weight: 700; letter-spacing: 2px; cursor: pointer; transition: 0.3s; }
-        .share-btn:hover { background: #fff; color: #000; border-color: #fff; }
+        .share-btn { background: #fff; color: #000; border: none; padding: 12px 30px; border-radius: 100px; font-size: 10px; font-weight: 700; letter-spacing: 2px; cursor: pointer; transition: 0.3s; }
+        .share-btn:hover { transform: scale(1.05); }
         .title { font-size: 2.4rem; font-weight: 200; letter-spacing: 14px; margin: 10px 0; }
         .subtitle { font-size: 0.6rem; color: #444; letter-spacing: 4px; text-transform: uppercase; }
         .ritual-btn { margin-top: 40px; background: #fff; color: #000; border: none; padding: 18px 55px; border-radius: 100px; font-weight: 800; letter-spacing: 2px; cursor: pointer; }
@@ -190,8 +178,4 @@ export default function Home() {
         .label { font-size: 9px; text-transform: uppercase; letter-spacing: 3px; color: #444; margin-bottom: 15px; display: block; }
         .friends-list { display: flex; flex-direction: column; gap: 10px; }
         .friend-row { display: flex; align-items: center; background: rgba(0,0,0,0.3); padding: 12px 20px; border-radius: 25px; cursor: pointer; transition: 0.3s; }
-        .friend-row:hover { border: 1px solid #fff; background: rgba(255,255,255,0.05); }
-      `}</style>
-    </main>
-  );
-}
+        .
