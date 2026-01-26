@@ -29,40 +29,20 @@ export default function Home() {
   const { data: txCount } = useTransactionCount({ address, chainId: base.id });
   
   const [stage, setStage] = useState<'idle' | 'syncing' | 'synced'>('idle');
-  const [impulseTarget, setImpulseTarget] = useState<string | null>(null);
+  const [splash, setSplash] = useState(false);
+  const [impulseStats, setImpulseStats] = useState<Record<string, number>>({});
 
   const myMood = useMemo(() => {
     if (!address) return AURA_MOODS[0];
-    const dateSeed = new Date().toDateString();
-    const txSeed = txCount?.toString() || '0';
-    const combinedSeed = address + dateSeed + txSeed;
+    const combinedSeed = address + new Date().toDateString() + (txCount?.toString() || '0');
     const index = combinedSeed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % AURA_MOODS.length;
     return AURA_MOODS[index];
   }, [address, txCount]);
 
   const generativeText = useMemo(() => {
     if (!isConnected) return "";
-    const now = new Date();
-    const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const txs = txCount || 0;
-    
-    const intros = [
-      `It is ${now.toLocaleDateString('en-US', { weekday: 'long' })}, ${timeStr}.`,
-      `Sync established at ${timeStr} in the Base sector.`,
-      `Frequencies aligned at ${timeStr}. Network is stable.`
-    ];
-    
-    const txComments = txs > 100 
-      ? `Your massive record of ${txs} transactions defines your authority.` 
-      : `Your ${txs} steps on Base have led to this current resonance.`;
-      
-    const vibes = [
-      `Your ${myMood.trait} aura is currently dominant.`,
-      `Digital alignment: ${myMood.name} state detected.`,
-      `You are radiating a ${myMood.trait} frequency today.`
-    ];
-
-    return `${intros[now.getSeconds() % 3]} ${txComments} ${vibes[now.getMinutes() % 3]}`;
+    return `Frequencies aligned at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. Network is stable. Your ${txs} steps on Base have led to this current resonance. Your ${myMood.trait} aura is currently dominant.`;
   }, [isConnected, myMood, txCount]);
 
   const handleCheckAura = async () => {
@@ -80,11 +60,25 @@ export default function Home() {
   };
 
   const handleShare = () => {
-    const appUrl = window.location.origin;
+    const appUrl = "https://aura-pulse.vercel.app"; // Замени на свой реальный домен
     const shareText = `My current aura on Base: ${myMood.name}\n\n"${generativeText}"\n\nCheck yours at`;
     const shareUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(shareText)}&embeds[]=${encodeURIComponent(appUrl + '?aura=' + myMood.name + '&color=' + encodeURIComponent(myMood.color))}`;
     window.open(shareUrl, '_blank');
   };
+
+  const triggerImpulse = (friendAddr: string) => {
+    const currentCount = impulseStats[friendAddr] || 0;
+    if (currentCount >= 2) return;
+
+    setSplash(true);
+    setImpulseStats(prev => ({ ...prev, [friendAddr]: currentCount + 1 }));
+    setTimeout(() => setSplash(false), 800);
+  };
+
+  const friends = [
+    { addr: '0x838aD0EAE54F99F1926dA7C3b6bFbF617389B4D9', color: '#10b981' },
+    { addr: '0x02feeb0AdE57b6adEEdE5A4EEea6Cf8c21BeB6B1', color: '#ec4899' }
+  ].filter(f => (impulseStats[f.addr] || 0) < 2);
 
   return (
     <main className={`app-container ${stage}`}>
@@ -93,8 +87,9 @@ export default function Home() {
       <div className="ui-wrapper">
         <header className="header">
           <Wallet>
-            <ConnectWallet className="wallet-pill">
-              <Avatar className="h-6 w-6" /><Name className="ml-2" />
+            <ConnectWallet className="custom-wallet">
+              <Avatar className="h-6 w-6" />
+              <Name className="ml-2 text-white font-bold" />
             </ConnectWallet>
             <WalletDropdown>
               <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick><Avatar /><Name /><Address /></Identity>
@@ -104,10 +99,11 @@ export default function Home() {
         </header>
 
         <section className="ritual-main">
-          <div className="aura-focus">
-            <div className={`core ${stage === 'synced' ? 'active' : ''}`} style={{ '--glow': myMood.color } as React.CSSProperties}></div>
+          <div className="aura-visual">
+            <div className={`sphere ${stage === 'synced' ? 'active' : ''} ${splash ? 'splash' : ''}`} 
+                 style={{ '--glow': myMood.color } as React.CSSProperties}></div>
             <div className="rings" style={{ '--glow': myMood.color } as React.CSSProperties}>
-              <span></span><span></span><span></span>
+              <span></span><span></span>
             </div>
           </div>
 
@@ -119,7 +115,7 @@ export default function Home() {
 
           <div className="branding">
             <h1 className="title">AURA PULSE</h1>
-            <p className="subtitle">{stage === 'synced' ? 'RECORDED ONCHAIN' : 'Connect to check your frequency'}</p>
+            <p className="subtitle">{stage === 'synced' ? 'RECORDED ONCHAIN' : 'Connect to check frequency'}</p>
           </div>
 
           {isConnected && stage !== 'synced' && (
@@ -132,52 +128,62 @@ export default function Home() {
         <section className="social-footer">
           <span className="label">Nearby Resonances</span>
           <div className="friends-list">
-            {[
-              { addr: '0x838aD0EAE54F99F1926dA7C3b6bFbF617389B4D9', color: '#10b981' },
-              { addr: '0x02feeb0AdE57b6adEEdE5A4EEea6Cf8c21BeB6B1', color: '#ec4899' }
-            ].map(f => (
-              <div key={f.addr} className="friend-row" onClick={() => { setImpulseTarget(f.addr); setTimeout(() => setImpulseTarget(null), 2000); }}>
-                <Avatar address={f.addr as `0x${string}`} className="h-10 w-10 border" style={{borderColor: f.color}} />
-                <div className="ml-3 text-left">
-                  <Name address={f.addr as `0x${string}`} className="text-sm font-bold block" />
-                  <span className="text-[9px] uppercase tracking-widest" style={{color: impulseTarget === f.addr ? '#fff' : '#444'}}>
-                    {impulseTarget === f.addr ? '⚡ Impulse Sent!' : 'Tap to sync'}
-                  </span>
+            {friends.map(f => (
+              <div key={f.addr} className="friend-row" onClick={() => triggerImpulse(f.addr)}>
+                <Avatar address={f.addr as `0x${string}`} className="h-10 w-10" />
+                <div className="friend-info">
+                  <Name address={f.addr as `0x${string}`} className="friend-name" />
+                  <span className="tap-hint">{2 - (impulseStats[f.addr] || 0)} charges left • Tap to sync</span>
                 </div>
               </div>
             ))}
+            {friends.length === 0 && <span className="empty-msg">All energies synchronized.</span>}
           </div>
         </section>
       </div>
 
       <style jsx global>{`
         body { background: #000; color: #fff; margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; }
-        .mystic-bg { position: absolute; inset: 0; background: radial-gradient(circle at 50% 30%, var(--color) 0%, #000 100%); opacity: 0.15; transition: 2s; z-index: 0; }
-        .ui-wrapper { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
+        .mystic-bg { position: absolute; inset: 0; background: radial-gradient(circle at 50% 30%, var(--color) 0%, #000 100%); opacity: 0.15; transition: 2s; }
+        .ui-wrapper { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; padding: 25px; box-sizing: border-box; }
         .header { display: flex; justify-content: flex-end; }
+        
+        /* Исправление коннекта кошелька */
+        .custom-wallet { background: rgba(255,255,255,0.08) !important; border: 1px solid rgba(255,255,255,0.15) !important; border-radius: 100px !important; padding: 8px 16px !important; color: #fff !important; box-shadow: none !important; }
+        
         .ritual-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
-        .aura-focus { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
-        .core { width: 70px; height: 70px; background: #fff; border-radius: 50%; box-shadow: 0 0 60px var(--glow); transition: 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
-        .core.active { transform: scale(1.5); filter: brightness(1.2); box-shadow: 0 0 100px var(--glow); }
+        .aura-visual { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
+        .sphere { width: 70px; height: 70px; background: #fff; border-radius: 50%; box-shadow: 0 0 60px var(--glow); transition: 1.5s cubic-bezier(0.4, 0, 0.2, 1); z-index: 2; }
+        .sphere.active { transform: scale(1.4); }
+        .sphere.splash { animation: sphereSplash 0.8s ease-out; }
+
+        @keyframes sphereSplash { 
+          0% { transform: scale(1.4); box-shadow: 0 0 60px var(--glow); }
+          50% { transform: scale(1.8); box-shadow: 0 0 140px var(--glow); }
+          100% { transform: scale(1.4); box-shadow: 0 0 60px var(--glow); }
+        }
+
         .rings span { position: absolute; inset: 0; border: 1px solid var(--glow); border-radius: 50%; opacity: 0; animation: waves 4s infinite linear; }
-        .rings span:nth-child(2) { animation-delay: 1.3s; }
-        .rings span:nth-child(3) { animation-delay: 2.6s; }
         @keyframes waves { 0% { transform: scale(0.6); opacity: 0.8; } 100% { transform: scale(2.6); opacity: 0; } }
-        .mood-card { opacity: 0; transform: translateY(20px); transition: 1.2s ease; margin: 25px 0; max-width: 300px; display: flex; flex-direction: column; align-items: center; }
+
+        .mood-card { opacity: 0; transform: translateY(20px); transition: 1s ease; margin: 25px 0; max-width: 300px; }
         .mood-card.visible { opacity: 1; transform: translateY(0); }
-        .mood-card h2 { font-size: 1.5rem; letter-spacing: 6px; margin-bottom: 8px; font-weight: 200; }
-        .description { font-size: 0.85rem; color: #888; line-height: 1.6; font-style: italic; margin-bottom: 25px; }
-        .share-btn { background: #fff; color: #000; border: none; padding: 12px 30px; border-radius: 100px; font-size: 10px; font-weight: 700; letter-spacing: 2px; cursor: pointer; transition: 0.3s; }
-        .share-btn:hover { background: #eee; }
-        .title { font-size: 2.4rem; font-weight: 200; letter-spacing: 14px; margin: 10px 0; }
-        .subtitle { font-size: 0.6rem; color: #444; letter-spacing: 4px; text-transform: uppercase; }
-        .ritual-btn { margin-top: 40px; background: #fff; color: #000; border: none; padding: 18px 55px; border-radius: 100px; font-weight: 800; letter-spacing: 2px; cursor: pointer; }
-        .wallet-pill { background: rgba(255,255,255,0.06) !important; border-radius: 100px !important; color: #fff !important; border: 1px solid rgba(255,255,255,0.1) !important; }
-        .social-footer { background: rgba(255,255,255,0.02); backdrop-filter: blur(25px); border-radius: 40px; padding: 25px; border: 1px solid rgba(255,255,255,0.05); margin-top: auto; }
-        .label { font-size: 9px; text-transform: uppercase; letter-spacing: 3px; color: #444; margin-bottom: 15px; display: block; }
-        .friends-list { display: flex; flex-direction: column; gap: 10px; }
-        .friend-row { display: flex; align-items: center; background: rgba(0,0,0,0.3); padding: 12px 20px; border-radius: 25px; cursor: pointer; transition: 0.3s; }
-        .friend-row:hover { border: 1px solid #fff; background: rgba(255,255,255,0.05); }
+        .description { font-size: 0.85rem; color: #888; margin-bottom: 20px; font-style: italic; line-height: 1.6; }
+        
+        .share-btn { background: #fff; color: #000; border: none; padding: 12px 30px; border-radius: 100px; font-size: 11px; font-weight: 800; cursor: pointer; letter-spacing: 1px; }
+        .title { font-size: 2.2rem; font-weight: 200; letter-spacing: 12px; margin: 10px 0; }
+        .ritual-btn { margin-top: 35px; background: #fff; color: #000; border: none; padding: 18px 50px; border-radius: 100px; font-weight: 800; cursor: pointer; }
+
+        /* Дизайн Nearby Resonances */
+        .social-footer { background: rgba(255,255,255,0.03); backdrop-filter: blur(15px); border-radius: 30px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); margin-top: auto; }
+        .label { font-size: 10px; text-transform: uppercase; letter-spacing: 3px; color: #444; margin-bottom: 15px; display: block; }
+        .friends-list { display: flex; flex-direction: column; gap: 12px; }
+        .friend-row { display: flex; align-items: center; background: rgba(255,255,255,0.03); padding: 10px 18px; border-radius: 20px; cursor: pointer; transition: 0.3s; border: 1px solid transparent; }
+        .friend-row:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.1); }
+        .friend-info { margin-left: 15px; text-align: left; }
+        .friend-name { font-size: 13px; font-weight: 700; color: #fff; display: block; }
+        .tap-hint { font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        .empty-msg { font-size: 11px; color: #444; font-style: italic; }
       `}</style>
     </main>
   );
