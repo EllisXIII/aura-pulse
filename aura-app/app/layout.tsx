@@ -12,6 +12,9 @@ const inter = Inter({ subsets: ['latin'] });
 export const metadata: Metadata = {
   title: 'Aura Pulse',
   description: 'Onchain Daily Resonance on Base',
+  openGraph: {
+    images: ['/api/og'], // По умолчанию
+  },
 };
 
 export default function RootLayout({
