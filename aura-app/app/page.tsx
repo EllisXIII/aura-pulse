@@ -6,73 +6,86 @@ import { useAccount, useSendTransaction, useSwitchChain } from 'wagmi';
 import { base } from 'wagmi/chains';
 import { parseEther } from 'viem';
 
-const FRIENDS = [
-  { address: '0x838aD0EAE54F99F1926dA7C3b6bFbF617389B4D9', color: '#10b981' },
-  { address: '0x02feeb0AdE57b6adEEdE5A4EEea6Cf8c21BeB6B1', color: '#ec4899' },
-];
-
 export default function Home() {
-  const { isConnected, chainId } = useAccount();
+  const { isConnected, address, chainId } = useAccount();
   const { switchChain } = useSwitchChain();
   const { sendTransaction } = useSendTransaction();
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [stage, setStage] = useState<'idle' | 'syncing' | 'synced'>('idle');
 
-  const sendImpulse = (friend: string) => {
-    if (!isConnected) return;
+  const handleCheckAura = async () => {
+    if (!isConnected || !address) return;
     if (chainId !== base.id) { switchChain({ chainId: base.id }); return; }
-    setIsSyncing(true);
-    sendTransaction({ to: friend as `0x${string}`, value: parseEther('0') }, { onSettled: () => setIsSyncing(false) });
+
+    setStage('syncing');
+    
+    // Метка "Aura Pulse Ritual" в Hex-формате для заметности в BaseScan
+    const hexData = '0x417572612050756c73652052697475616c'; 
+
+    sendTransaction({
+      to: address as `0x${string}`,
+      value: parseEther('0'),
+      data: hexData as `0x${string}`,
+    }, {
+      onSuccess: () => setStage('synced'),
+      onError: () => setStage('idle'),
+    });
   };
 
   return (
-    <main className={`main-screen ${isSyncing ? 'active-pulse' : ''}`}>
-      <div className="bg-animation"></div>
+    <main className={`main-wrap ${stage}`}>
+      <div className="mystic-void"></div>
       
-      <div className="ui-layer">
-        <header className="flex justify-end p-4">
+      <div className="content-layer">
+        <header className="flex justify-end p-6">
           <Wallet>
-            <ConnectWallet className="wallet-pill">
+            <ConnectWallet className="pill-btn">
               <Avatar className="h-6 w-6" /><Name className="ml-2" />
             </ConnectWallet>
             <WalletDropdown><Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick><Avatar /><Name /><Address /></Identity><WalletDropdownDisconnect /></WalletDropdown>
           </Wallet>
         </header>
 
-        <div className="ritual-center">
-          <div className="aura-sphere">
-            <div className="sphere-inner"></div>
-            <div className="sphere-glow"></div>
+        <section className="aura-ritual">
+          <div className="visual-core">
+            <div className={`sphere ${stage === 'synced' ? 'active' : ''}`}></div>
+            <div className="waves"><span></span><span></span></div>
           </div>
-          <h1 className="text-3xl font-light tracking-[15px] mt-8">AURA PULSE</h1>
-        </div>
+          <h1 className="title">AURA PULSE</h1>
+          <p className="status-label">{stage === 'synced' ? 'RECORDED IN ETERNITY' : 'Sync your digital frequency'}</p>
+          
+          {isConnected && stage !== 'synced' && (
+            <button onClick={handleCheckAura} className="ritual-btn">
+              {stage === 'syncing' ? 'RECORDING...' : 'CHECK AURA'}
+            </button>
+          )}
+        </section>
 
-        <div className="social-footer">
-          <p className="text-[10px] text-gray-500 uppercase tracking-widest mb-4">Nearby Auras</p>
-          {FRIENDS.map(f => (
-            <div key={f.address} className="friend-row" onClick={() => sendImpulse(f.address)}>
-              <Avatar address={f.address as `0x${string}`} className="h-10 w-10 border" style={{borderColor: f.color}} />
-              <div className="ml-4 text-left">
-                <Name address={f.address as `0x${string}`} className="text-sm font-bold" />
-                <span className="text-[9px] text-purple-400 block">SEND IMPULSE</span>
-              </div>
-            </div>
-          ))}
-        </div>
+        <footer className="footer-panel">
+          <div className="pulse-indicator">
+            <div className="dot"></div>
+            <span>Base Network Live</span>
+          </div>
+        </footer>
       </div>
 
       <style jsx global>{`
-        body { background: #000; color: #fff; margin: 0; overflow: hidden; font-family: sans-serif; }
-        .bg-animation { position: absolute; inset: 0; background: radial-gradient(circle at center, #1a0b2e 0%, #000 100%); animation: bg-pulse 8s infinite alternate; z-index: 0; }
-        @keyframes bg-pulse { 0% { opacity: 0.5; transform: scale(1); } 100% { opacity: 1; transform: scale(1.1); } }
-        .ui-layer { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; }
-        .ritual-center { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .aura-sphere { position: relative; width: 150px; height: 150px; }
-        .sphere-inner { position: absolute; inset: 0; background: #fff; border-radius: 50%; box-shadow: 0 0 50px #a855f7; animation: sphere-throb 4s infinite ease-in-out; }
-        @keyframes sphere-throb { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); filter: blur(10px); } }
-        .social-footer { background: rgba(255,255,255,0.03); backdrop-filter: blur(20px); border-radius: 40px 40px 0 0; padding: 30px; border-top: 1px solid rgba(255,255,255,0.05); }
-        .friend-row { display: flex; align-items: center; background: rgba(0,0,0,0.5); padding: 12px 20px; border-radius: 20px; margin-bottom: 10px; cursor: pointer; transition: 0.3s; }
-        .friend-row:hover { background: rgba(255,255,255,0.05); border-color: #a855f7; }
-        .wallet-pill { background: rgba(255,255,255,0.1) !important; border-radius: 100px !important; color: white !important; }
+        body { background: #000; color: #fff; margin: 0; font-family: 'Inter', sans-serif; overflow: hidden; }
+        .mystic-void { position: absolute; inset: 0; background: radial-gradient(circle at 50% 35%, #150a25 0%, #000 100%); z-index: 0; }
+        .content-layer { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; }
+        .aura-ritual { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .visual-core { position: relative; width: 200px; height: 200px; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; }
+        .sphere { width: 70px; height: 70px; background: #fff; border-radius: 50%; box-shadow: 0 0 50px #a855f7; transition: 1.5s; }
+        .sphere.active { transform: scale(1.3); box-shadow: 0 0 100px #a855f7; }
+        .waves span { position: absolute; inset: 0; border: 1px solid #a855f7; border-radius: 50%; animation: pulse-out 4s infinite linear; opacity: 0; }
+        .waves span:nth-child(2) { animation-delay: 2s; }
+        @keyframes pulse-out { 0% { transform: scale(0.7); opacity: 0.8; } 100% { transform: scale(2.2); opacity: 0; } }
+        .title { font-size: 2.2rem; font-weight: 200; letter-spacing: 12px; margin: 10px 0; }
+        .status-label { font-size: 10px; color: #555; letter-spacing: 4px; text-transform: uppercase; }
+        .ritual-btn { margin-top: 50px; background: #fff; color: #000; border: none; padding: 18px 50px; border-radius: 100px; font-weight: 800; letter-spacing: 2px; cursor: pointer; transition: 0.3s; }
+        .pill-btn { background: rgba(255,255,255,0.06) !important; border-radius: 100px !important; color: #fff !important; }
+        .footer-panel { background: rgba(255,255,255,0.02); backdrop-filter: blur(20px); border-radius: 40px 40px 0 0; padding: 25px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center; }
+        .dot { width: 6px; height: 6px; background: #a855f7; border-radius: 50%; box-shadow: 0 0 10px #a855f7; animation: blink 2s infinite; display: inline-block; margin-right: 8px; }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
       `}</style>
     </main>
   );
