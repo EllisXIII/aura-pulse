@@ -27,7 +27,7 @@ export default function Home() {
   const { switchChain } = useSwitchChain();
   const { sendTransaction } = useSendTransaction();
   
-  // Добавляем refetch для синхронизации после транзакции
+  // ОСТАВЛЯЕМ ФИКС: refetch для синхронизации
   const { data: txCount, refetch: refetchTxCount } = useTransactionCount({ 
     address, 
     chainId: base.id,
@@ -62,7 +62,7 @@ export default function Home() {
       data: '0x417572612050756c73652052697475616c' as `0x${string}`,
     }, {
       onSuccess: async () => {
-        // Ждем мгновение и обновляем счетчик транзакций до смены стейджа
+        // ОСТАВЛЯЕМ ФИКС: Ждем обновления данных из блокчейна
         await refetchTxCount();
         setStage('synced');
       },
@@ -157,63 +157,63 @@ export default function Home() {
 
       <style jsx global>{`
         body { background: #000; color: #fff; margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; }
-        .mystic-bg { position: absolute; inset: 0; background: radial-gradient(circle at 50% 30%, var(--color) 0%, #000 100%); opacity: 0.2; transition: 2s; }
+        .mystic-bg { position: absolute; inset: 0; background: radial-gradient(circle at 50% 30%, var(--color) 0%, #000 100%); opacity: 0.15; transition: 2s; }
         .ui-wrapper { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; padding: 25px; box-sizing: border-box; }
         .header { display: flex; justify-content: flex-end; width: 100%; }
 
-        /* ВЫСОКОКОНТРАСТНЫЙ КОШЕЛЕК - ФИКС ЦВЕТА */
-        .vibrant-wallet { background: #fff !important; border-radius: 100px !important; padding: 10px 24px !important; border: none !important; box-shadow: 0 0 25px rgba(255,255,255,0.3) !important; }
-        .vibrant-name { color: #000 !important; font-weight: 900 !important; margin-left: 10px !important; }
+        /* ВЕРНУЛИ СТАРЫЙ СТИЛЬ КОШЕЛЬКА */
+        .vibrant-wallet { background: rgba(255,255,255,0.08) !important; border-radius: 100px !important; padding: 10px 24px !important; border: 1px solid rgba(255,255,255,0.1) !important; color: #fff !important; }
+        .vibrant-name { color: #fff !important; font-weight: 700 !important; margin-left: 10px !important; }
 
         .ritual-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
         .aura-focus { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
-        .core { width: 75px; height: 75px; background: #fff; border-radius: 50%; box-shadow: 0 0 60px var(--glow); transition: 1.5s cubic-bezier(0.4, 0, 0.2, 1); z-index: 5; }
-        .core.active { transform: scale(1.45); filter: brightness(1.2); }
+        .core { width: 70px; height: 70px; background: #fff; border-radius: 50%; box-shadow: 0 0 60px var(--glow); transition: 1.5s cubic-bezier(0.4, 0, 0.2, 1); z-index: 5; }
+        .core.active { transform: scale(1.4); filter: brightness(1.2); }
         
         .core.splash { animation: splashEffect 0.8s ease-out; }
         @keyframes splashEffect {
-          0% { transform: scale(1.45); box-shadow: 0 0 60px var(--glow); }
-          50% { transform: scale(2.8); box-shadow: 0 0 200px var(--glow); filter: brightness(2); }
-          100% { transform: scale(1.45); box-shadow: 0 0 60px var(--glow); }
+          0% { transform: scale(1.4); box-shadow: 0 0 60px var(--glow); }
+          50% { transform: scale(2.2); box-shadow: 0 0 150px var(--glow); filter: brightness(1.5); }
+          100% { transform: scale(1.4); box-shadow: 0 0 60px var(--glow); }
         }
 
-        .rings span { position: absolute; inset: 0; border: 1.5px solid var(--glow); border-radius: 50%; opacity: 0; animation: waves 4s infinite linear; }
-        @keyframes waves { 0% { transform: scale(0.6); opacity: 0.9; } 100% { transform: scale(3); opacity: 0; } }
+        .rings span { position: absolute; inset: 0; border: 1px solid var(--glow); border-radius: 50%; opacity: 0; animation: waves 4s infinite linear; }
+        @keyframes waves { 0% { transform: scale(0.6); opacity: 0.8; } 100% { transform: scale(2.6); opacity: 0; } }
 
         .mood-card { opacity: 0; transform: translateY(25px); transition: 1.2s ease; margin: 30px 0; max-width: 320px; }
         .mood-card.visible { opacity: 1; transform: translateY(0); }
-        .description { font-size: 0.95rem; color: #eee; margin-bottom: 25px; font-style: italic; line-height: 1.6; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
-        .share-btn { background: #fff; color: #000; border: none; padding: 15px 40px; border-radius: 100px; font-size: 11px; font-weight: 900; cursor: pointer; letter-spacing: 1px; transition: 0.3s; }
-        .share-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(255,255,255,0.2); }
+        .description { font-size: 0.9rem; color: #888; margin-bottom: 25px; font-style: italic; line-height: 1.6; }
+        .share-btn { background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 14px 35px; border-radius: 100px; font-size: 11px; font-weight: 800; cursor: pointer; letter-spacing: 1px; transition: 0.3s; }
+        .share-btn:hover { background: #fff; color: #000; }
 
-        .title { font-size: 2.6rem; font-weight: 200; letter-spacing: 16px; margin: 15px 0; text-shadow: 0 0 30px rgba(255,255,255,0.2); }
-        .subtitle { font-size: 11px; color: #888; letter-spacing: 5px; text-transform: uppercase; }
-        .ritual-btn { margin-top: 45px; background: #fff; color: #000; border: none; padding: 22px 65px; border-radius: 100px; font-weight: 900; cursor: pointer; box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: 0.3s; }
+        .title { font-size: 2.4rem; font-weight: 200; letter-spacing: 14px; margin: 15px 0; }
+        .subtitle { font-size: 10px; color: #555; letter-spacing: 4px; text-transform: uppercase; }
+        .ritual-btn { margin-top: 45px; background: #fff; color: #000; border: none; padding: 20px 60px; border-radius: 100px; font-weight: 900; cursor: pointer; transition: 0.3s; }
 
-        /* ПРЕМИАЛЬНЫЙ SOCIAL PANEL - БОЛЬШЕ ЯРКОСТИ */
-        .social-panel { background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.15); border-radius: 35px; padding: 25px; margin-top: auto; backdrop-filter: blur(25px); }
-        .panel-label { font-size: 11px; text-transform: uppercase; letter-spacing: 4px; color: #fff; opacity: 0.6; margin-bottom: 20px; display: block; font-weight: 700; }
-        .friend-card { display: flex; align-items: center; background: rgba(0,0,0,0.4); padding: 16px 22px; border-radius: 25px; cursor: pointer; transition: 0.3s; border: 1px solid rgba(255,255,255,0.1); }
-        .friend-card:hover { background: rgba(255,255,255,0.1); border-color: #fff; }
+        /* ВЕРНУЛИ СТАРЫЙ СТИЛЬ ПАНЕЛИ */
+        .social-panel { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); border-radius: 35px; padding: 25px; margin-top: auto; backdrop-filter: blur(15px); }
+        .panel-label { font-size: 10px; text-transform: uppercase; letter-spacing: 4px; color: #666; margin-bottom: 20px; display: block; font-weight: 700; }
+        .friend-card { display: flex; align-items: center; background: rgba(0,0,0,0.2); padding: 15px 20px; border-radius: 25px; cursor: pointer; transition: 0.3s; border: 1px solid transparent; }
+        .friend-card:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.1); }
         
-        /* МЕРЦАЮЩИЕ ОГОНЬКИ */
+        /* МЕРЦАЮЩИЕ ОГОНЬКИ (ОСТАВИЛИ, Т.К. ТЫ ИХ ПРОСИЛ) */
         .flicker-orb { 
-          width: 34px; height: 34px; border-radius: 50%; z-index: 2; 
+          width: 32px; height: 32px; border-radius: 50%; z-index: 2; 
           background: radial-gradient(circle at 30% 30%, #fff, var(--orb-color)); 
-          box-shadow: 0 0 15px var(--orb-color);
-          animation: orbFlicker 2s infinite alternate ease-in-out;
+          box-shadow: 0 0 10px var(--orb-color);
+          animation: orbFlicker 2.5s infinite alternate ease-in-out;
         }
         .orb-glow-layer { 
-          position: absolute; inset: -6px; border-radius: 50%; z-index: 1; 
-          background: var(--orb-color); filter: blur(15px); opacity: 0.7;
-          animation: orbGlowPulse 2.5s infinite alternate ease-in-out;
+          position: absolute; inset: -4px; border-radius: 50%; z-index: 1; 
+          background: var(--orb-color); filter: blur(12px); opacity: 0.5;
+          animation: orbGlowPulse 3s infinite alternate ease-in-out;
         }
+        @keyframes orbFlicker { 0% { transform: scale(0.95); filter: brightness(1); } 100% { transform: scale(1.1); filter: brightness(1.3); } }
+        @keyframes orbGlowPulse { 0% { opacity: 0.3; transform: scale(0.9); } 100% { opacity: 0.7; transform: scale(1.2); } }
 
-        @keyframes orbFlicker { 0% { transform: scale(0.9); filter: brightness(1); } 100% { transform: scale(1.15); filter: brightness(1.4); } }
-        @keyframes orbGlowPulse { 0% { opacity: 0.3; transform: scale(0.8); } 100% { opacity: 0.9; transform: scale(1.4); } }
-
-        .friend-name-text { font-size: 16px; font-weight: 900; color: #fff; display: block; }
-        .charge-text { font-size: 10px; color: #fff; opacity: 0.5; letter-spacing: 1px; margin-top: 5px; display: block; font-weight: 700; }
+        .friend-name-text { font-size: 15px; font-weight: 800; color: #fff; display: block; }
+        .charge-text { font-size: 10px; color: #777; letter-spacing: 1px; margin-top: 4px; display: block; font-weight: 600; }
+        .empty-status { font-size: 12px; color: #555; font-style: italic; }
       `}</style>
     </main>
   );
