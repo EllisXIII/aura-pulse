@@ -41,8 +41,7 @@ export default function Home() {
 
   const generativeText = useMemo(() => {
     if (!isConnected) return "";
-    const txs = txCount || 0;
-    return `Frequencies aligned at ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}. Network is stable. Your ${txs} steps on Base have led to this current resonance. Your ${myMood.trait} aura is currently dominant.`;
+    return `Resonance confirmed. Your ${txCount || 0} steps on Base have stabilized your ${myMood.trait} frequency.`;
   }, [isConnected, myMood, txCount]);
 
   const handleCheckAura = async () => {
@@ -60,8 +59,8 @@ export default function Home() {
   };
 
   const handleShare = () => {
-    const appUrl = "https://aura-pulse.vercel.app"; // Замени на свой реальный домен
-    const shareText = `My current aura on Base: ${myMood.name}\n\n"${generativeText}"\n\nCheck yours at`;
+    const appUrl = window.location.origin;
+    const shareText = `My current aura on Base: ${myMood.name}\n\nCheck yours at`;
     const shareUrl = `https://warpcast.com/~/compose?text=${encodeURIComponent(shareText)}&embeds[]=${encodeURIComponent(appUrl + '?aura=' + myMood.name + '&color=' + encodeURIComponent(myMood.color))}`;
     window.open(shareUrl, '_blank');
   };
@@ -86,16 +85,18 @@ export default function Home() {
       
       <div className="ui-wrapper">
         <header className="header">
-          <Wallet>
-            <ConnectWallet className="custom-wallet">
-              <Avatar className="h-6 w-6" />
-              <Name className="ml-2 text-white font-bold" />
-            </ConnectWallet>
-            <WalletDropdown>
-              <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick><Avatar /><Name /><Address /></Identity>
-              <WalletDropdownDisconnect />
-            </WalletDropdown>
-          </Wallet>
+          <div className="wallet-container">
+            <Wallet>
+              <ConnectWallet className="vibrant-wallet">
+                <Avatar className="h-6 w-6" />
+                <Name className="name-fix" />
+              </ConnectWallet>
+              <WalletDropdown>
+                <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick><Avatar /><Name /><Address /></Identity>
+                <WalletDropdownDisconnect />
+              </WalletDropdown>
+            </Wallet>
+          </div>
         </header>
 
         <section className="ritual-main">
@@ -125,19 +126,19 @@ export default function Home() {
           )}
         </section>
 
-        <section className="social-footer">
-          <span className="label">Nearby Resonances</span>
-          <div className="friends-list">
+        <section className="social-footer-v2">
+          <span className="label-v2">Nearby Resonances</span>
+          <div className="friends-list-v2">
             {friends.map(f => (
-              <div key={f.addr} className="friend-row" onClick={() => triggerImpulse(f.addr)}>
-                <Avatar address={f.addr as `0x${string}`} className="h-10 w-10" />
+              <div key={f.addr} className="friend-row-v2" onClick={() => triggerImpulse(f.addr)}>
+                <Avatar address={f.addr as `0x${string}`} className="h-10 w-10 avatar-border" />
                 <div className="friend-info">
-                  <Name address={f.addr as `0x${string}`} className="friend-name" />
-                  <span className="tap-hint">{2 - (impulseStats[f.addr] || 0)} charges left • Tap to sync</span>
+                  <Name address={f.addr as `0x${string}`} className="friend-name-v2" />
+                  <span className="tap-hint-v2">{2 - (impulseStats[f.addr] || 0)} charges left • Tap to sync</span>
                 </div>
               </div>
             ))}
-            {friends.length === 0 && <span className="empty-msg">All energies synchronized.</span>}
+            {friends.length === 0 && <span className="empty-msg">Energy sync complete.</span>}
           </div>
         </section>
       </div>
@@ -146,44 +147,49 @@ export default function Home() {
         body { background: #000; color: #fff; margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; }
         .mystic-bg { position: absolute; inset: 0; background: radial-gradient(circle at 50% 30%, var(--color) 0%, #000 100%); opacity: 0.15; transition: 2s; }
         .ui-wrapper { position: relative; z-index: 10; height: 100vh; display: flex; flex-direction: column; padding: 25px; box-sizing: border-box; }
-        .header { display: flex; justify-content: flex-end; }
+        .header { display: flex; justify-content: flex-end; width: 100%; }
         
-        /* Исправление коннекта кошелька */
-        .custom-wallet { background: rgba(255,255,255,0.08) !important; border: 1px solid rgba(255,255,255,0.15) !important; border-radius: 100px !important; padding: 8px 16px !important; color: #fff !important; box-shadow: none !important; }
+        /* ФИКС КОШЕЛЬКА */
+        .wallet-container { position: relative; }
+        .vibrant-wallet { background: #fff !important; color: #000 !important; border-radius: 100px !important; padding: 10px 20px !important; border: none !important; box-shadow: 0 0 20px rgba(255,255,255,0.2) !important; font-weight: 800 !important; }
+        .name-fix { color: #000 !important; font-weight: 800 !important; margin-left: 8px !important; }
         
         .ritual-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
         .aura-visual { position: relative; width: 220px; height: 220px; display: flex; align-items: center; justify-content: center; }
-        .sphere { width: 70px; height: 70px; background: #fff; border-radius: 50%; box-shadow: 0 0 60px var(--glow); transition: 1.5s cubic-bezier(0.4, 0, 0.2, 1); z-index: 2; }
+        
+        .sphere { width: 70px; height: 70px; background: #fff; border-radius: 50%; box-shadow: 0 0 60px var(--glow); transition: 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
         .sphere.active { transform: scale(1.4); }
-        .sphere.splash { animation: sphereSplash 0.8s ease-out; }
+        .sphere.splash { animation: splashEffect 0.8s ease-out; }
 
-        @keyframes sphereSplash { 
+        @keyframes splashEffect {
           0% { transform: scale(1.4); box-shadow: 0 0 60px var(--glow); }
-          50% { transform: scale(1.8); box-shadow: 0 0 140px var(--glow); }
+          50% { transform: scale(2.2); box-shadow: 0 0 150px var(--glow); filter: brightness(1.5); }
           100% { transform: scale(1.4); box-shadow: 0 0 60px var(--glow); }
         }
 
         .rings span { position: absolute; inset: 0; border: 1px solid var(--glow); border-radius: 50%; opacity: 0; animation: waves 4s infinite linear; }
         @keyframes waves { 0% { transform: scale(0.6); opacity: 0.8; } 100% { transform: scale(2.6); opacity: 0; } }
 
-        .mood-card { opacity: 0; transform: translateY(20px); transition: 1s ease; margin: 25px 0; max-width: 300px; }
+        .mood-card { opacity: 0; transform: translateY(20px); transition: 1s ease; margin: 30px 0; max-width: 320px; }
         .mood-card.visible { opacity: 1; transform: translateY(0); }
-        .description { font-size: 0.85rem; color: #888; margin-bottom: 20px; font-style: italic; line-height: 1.6; }
-        
-        .share-btn { background: #fff; color: #000; border: none; padding: 12px 30px; border-radius: 100px; font-size: 11px; font-weight: 800; cursor: pointer; letter-spacing: 1px; }
-        .title { font-size: 2.2rem; font-weight: 200; letter-spacing: 12px; margin: 10px 0; }
-        .ritual-btn { margin-top: 35px; background: #fff; color: #000; border: none; padding: 18px 50px; border-radius: 100px; font-weight: 800; cursor: pointer; }
+        .description { font-size: 0.9rem; color: #ccc; margin-bottom: 25px; font-style: italic; line-height: 1.6; }
+        .share-btn { background: #fff; color: #000; border: none; padding: 14px 35px; border-radius: 100px; font-size: 11px; font-weight: 900; cursor: pointer; letter-spacing: 1px; }
 
-        /* Дизайн Nearby Resonances */
-        .social-footer { background: rgba(255,255,255,0.03); backdrop-filter: blur(15px); border-radius: 30px; padding: 20px; border: 1px solid rgba(255,255,255,0.05); margin-top: auto; }
-        .label { font-size: 10px; text-transform: uppercase; letter-spacing: 3px; color: #444; margin-bottom: 15px; display: block; }
-        .friends-list { display: flex; flex-direction: column; gap: 12px; }
-        .friend-row { display: flex; align-items: center; background: rgba(255,255,255,0.03); padding: 10px 18px; border-radius: 20px; cursor: pointer; transition: 0.3s; border: 1px solid transparent; }
-        .friend-row:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.1); }
+        .title { font-size: 2.4rem; font-weight: 200; letter-spacing: 14px; margin: 10px 0; }
+        .subtitle { font-size: 10px; color: #666; letter-spacing: 4px; text-transform: uppercase; }
+        .ritual-btn { margin-top: 40px; background: #fff; color: #000; border: none; padding: 20px 60px; border-radius: 100px; font-weight: 900; cursor: pointer; box-shadow: 0 0 30px rgba(255,255,255,0.1); }
+
+        /* НОВЫЙ ДИЗАЙН NEARBY RESONANCES */
+        .social-footer-v2 { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 35px; padding: 25px; margin-top: auto; }
+        .label-v2 { font-size: 10px; text-transform: uppercase; letter-spacing: 4px; color: #888; margin-bottom: 20px; display: block; font-weight: 700; }
+        .friends-list-v2 { display: flex; flex-direction: column; gap: 15px; }
+        .friend-row-v2 { display: flex; align-items: center; background: rgba(255,255,255,0.03); padding: 15px 20px; border-radius: 25px; cursor: pointer; transition: 0.2s; border: 1px solid transparent; }
+        .friend-row-v2:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); }
         .friend-info { margin-left: 15px; text-align: left; }
-        .friend-name { font-size: 13px; font-weight: 700; color: #fff; display: block; }
-        .tap-hint { font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
-        .empty-msg { font-size: 11px; color: #444; font-style: italic; }
+        .friend-name-v2 { font-size: 14px; font-weight: 800; color: #fff !important; display: block; }
+        .tap-hint-v2 { font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; display: block; }
+        .empty-msg { font-size: 12px; color: #666; font-style: italic; }
+        .avatar-border { border: 2px solid rgba(255,255,255,0.1); }
       `}</style>
     </main>
   );
