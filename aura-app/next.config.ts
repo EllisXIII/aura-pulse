@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'Content-Security-Policy',
-            value: "frame-ancestors 'self' https://*.coinbase.com https://*.base.org https://*.farcaster.xyz https://*.warpcast.com;"
+            value: "frame-ancestors 'self' https://*.coinbase.com https://*.base.org https://www.base.dev https://*.farcaster.xyz https://*.warpcast.com;",
           },
         ],
       },
