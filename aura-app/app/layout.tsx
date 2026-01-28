@@ -25,6 +25,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <meta name="base:app_id" content="6979312d9266edba958ff38f" />
+      </head>
       <body className={inter.className}>
         <RootProvider>
           {children}
