@@ -8,23 +8,23 @@ import { base } from 'wagmi/chains';
 import { parseEther } from 'viem';
 
 const AURA_MOODS = [
-  { name: 'VIOLET NEBULA', color: '#a855f7', trait: 'Intuitive' },
-  { name: 'CYBER EMERALD', color: '#10b981', trait: 'Stable' },
-  { name: 'SOLAR FLARE', color: '#f59e0b', trait: 'Radiant' },
-  { name: 'ELECTRIC SHARD', color: '#06b6d4', trait: 'Precise' },
-  { name: 'CRIMSON PULSE', color: '#ef4444', trait: 'Powerful' },
-  { name: 'GHOST SHELL', color: '#94a3b8', trait: 'Stealthy' },
-  { name: 'NEON DREAM', color: '#ec4899', trait: 'Visionary' },
-  { name: 'DEEP COBALT', color: '#2563eb', trait: 'Infinite' },
-  { name: 'MINT PHANTOM', color: '#2dd4bf', trait: 'Ethereal' },
-  { name: 'GOLDEN RATIO', color: '#fbbf24', trait: 'Harmonious' },
-  { name: 'AMETHYST VOID', color: '#7c3aed', trait: 'Mystical' },
-  { name: 'PLASMA CORE', color: '#84cc16', trait: 'Vital' },
+  { name: 'VIOLET NEBULA', color: '#a855f7', trait: 'Intuitive', meaning: 'Your frequency aligns with the unseen. You perceive patterns within the digital noise.' },
+  { name: 'CYBER EMERALD', color: '#10b981', trait: 'Stable', meaning: 'A digital anchor. Your presence on Base provides a foundation of reliability.' },
+  { name: 'SOLAR FLARE', color: '#f59e0b', trait: 'Radiant', meaning: 'High-energy state detected. You act as a catalyst for network activity.' },
+  { name: 'ELECTRIC SHARD', color: '#06b6d4', trait: 'Precise', meaning: 'Calculated and sharp. Your interactions are efficient and perfectly timed.' },
+  { name: 'CRIMSON PULSE', color: '#ef4444', trait: 'Powerful', meaning: 'Dominant resonance. You leave a significant trace with every transaction.' },
+  { name: 'GHOST SHELL', color: '#94a3b8', trait: 'Stealthy', meaning: 'Minimalist frequency. You navigate the chain with quiet, focused intent.' },
+  { name: 'NEON DREAM', color: '#ec4899', trait: 'Visionary', meaning: 'Future-aligned. Your activity suggests early adoption of emerging shifts.' },
+  { name: 'DEEP COBALT', color: '#2563eb', trait: 'Infinite', meaning: 'Unbounded potential. Your onchain history reflects a vast, exploratory nature.' },
+  { name: 'MINT PHANTOM', color: '#2dd4bf', trait: 'Ethereal', meaning: 'Light and adaptive. You move through protocols with fluid ease.' },
+  { name: 'GOLDEN RATIO', color: '#fbbf24', trait: 'Harmonious', meaning: 'Perfect balance. Your activity cycle matches the heartbeat of the chain.' },
+  { name: 'AMETHYST VOID', color: '#7c3aed', trait: 'Mystical', meaning: 'Deeply encoded. Your resonance comes from a place of profound complexity.' },
+  { name: 'PLASMA CORE', color: '#84cc16', trait: 'Vital', meaning: 'Pure energy. You are essential to the living ecosystem of the network.' },
 ];
 
 export default function Home() {
   const { isConnected, address, chainId } = useAccount();
-  const { switchChainAsync } = useSwitchChain();
+  const { switchChain } = useSwitchChain();
   const { sendTransactionAsync } = useSendTransaction();
   const { data: txCount, refetch: refetchTxCount } = useTransactionCount({ address, chainId: base.id });
   
@@ -36,7 +36,7 @@ export default function Home() {
     const y = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
     const id = Date.now();
     setPulses(prev => [...prev, { id, x, y }]);
-    setTimeout(() => setPulses(prev => prev.filter(p => p.id !== id)), 800);
+    setTimeout(() => setPulses(prev => prev.filter(p => p.id !== id)), 1000);
   };
 
   const myMood = useMemo(() => {
@@ -46,28 +46,38 @@ export default function Home() {
     return AURA_MOODS[index];
   }, [address, txCount]);
 
-  const handleCheckAura = async () => {
-    if (!isConnected || !address) return;
-    setStage('syncing');
-    
-    try {
-      // 1. Смена сети с обязательным ожиданием
-      if (chainId !== base.id) {
-        await switchChainAsync({ chainId: base.id });
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Ждем 1 сек, пока кошелек "протрет глаза"
-      }
+  const activityLevel = useMemo(() => {
+    const count = Number(txCount || 0);
+    if (count > 50) return "Legendary Explorer";
+    if (count > 10) return "Active Resonator";
+    if (count > 0) return "Developing Frequency";
+    return "Silent Observer";
+  }, [txCount]);
 
-      // 2. Отправка транзакции БЕЗ явного chainId (пусть wagmi возьмет его из активного сигнера)
+  const handleAction = async () => {
+    if (!isConnected || !address) return;
+
+    // ШАГ 1: Если сеть не Base — только переключаем
+    if (chainId !== base.id) {
+      switchChain({ chainId: base.id });
+      return;
+    }
+
+    // ШАГ 2: Если уже в Base — отправляем транзакцию
+    setStage('syncing');
+    try {
       await sendTransactionAsync({
+        account: address as `0x${string}`, // Явное указание аккаунта
         to: address as `0x${string}`,
         value: parseEther('0'),
         data: '0x417572612050756c73652052697475616c',
+        gas: 40000n, // Фикс лимита газа для мобилок
       });
 
       await refetchTxCount();
       setStage('synced');
     } catch (err) {
-      console.error("Tx Error:", err);
+      console.error("Tx error:", err);
       setStage('idle');
     }
   };
@@ -75,7 +85,6 @@ export default function Home() {
   return (
     <main className="app-container" onMouseDown={handleGlobalTap} onTouchStart={handleGlobalTap}>
       <div className="mystic-bg" style={{ '--color': myMood.color } as React.CSSProperties}></div>
-      
       {pulses.map(p => (
         <div key={p.id} className="tap-pulse" style={{ left: p.x, top: p.y, '--color': myMood.color } as React.CSSProperties}></div>
       ))}
@@ -96,18 +105,18 @@ export default function Home() {
 
         <section className="ritual-main">
           <div className="aura-focus">
-            <div className={`core ${stage === 'synced' ? 'active' : ''}`} 
-                 style={{ '--glow': myMood.color } as React.CSSProperties}></div>
-            <div className="rings" style={{ '--glow': myMood.color } as React.CSSProperties}>
-              <span></span><span></span>
-            </div>
+            <div className={`core ${stage === 'synced' ? 'active' : ''}`} style={{ '--glow': myMood.color } as React.CSSProperties}></div>
+            <div className="rings" style={{ '--glow': myMood.color } as React.CSSProperties}><span></span><span></span></div>
           </div>
 
           <div className="content-box">
             {stage === 'synced' ? (
               <div className="mood-result">
                 <h2 style={{ color: myMood.color }}>{myMood.name}</h2>
-                <p>Resonance frequency stable.</p>
+                <p className="generative-text">
+                   <b>{myMood.trait} ({activityLevel}).</b> {myMood.meaning}
+                </p>
+                <span className="tx-count">Verified via {txCount || 0} Base interactions.</span>
               </div>
             ) : (
               <div className="branding">
@@ -117,8 +126,8 @@ export default function Home() {
             )}
 
             {isConnected && stage !== 'synced' && (
-              <button onClick={handleCheckAura} className="ritual-btn" disabled={stage === 'syncing'}>
-                {stage === 'syncing' ? 'SYNCING...' : 'CHECK AURA'}
+              <button onClick={handleAction} className="ritual-btn" disabled={stage === 'syncing'}>
+                {chainId !== base.id ? 'SWITCH TO BASE' : (stage === 'syncing' ? 'SYNCING...' : 'CHECK AURA')}
               </button>
             )}
           </div>
@@ -126,38 +135,32 @@ export default function Home() {
       </div>
 
       <style jsx global>{`
-        body { background: #000; color: #fff; margin: 0; overflow: hidden; font-family: sans-serif; height: 100dvh; }
+        body { background: #000; color: #fff; margin: 0; overflow: hidden; font-family: -apple-system, system-ui, sans-serif; height: 100dvh; }
         .app-container { position: relative; height: 100dvh; width: 100vw; overflow: hidden; touch-action: none; }
-        .mystic-bg { position: absolute; inset: 0; background: radial-gradient(circle at 50% 35%, var(--color) 0%, #000 80%); opacity: 0.25; transition: 2s; }
-        
-        .tap-pulse { position: absolute; width: 2px; height: 2px; background: #fff; border-radius: 50%; pointer-events: none; animation: pulseOut 0.8s ease-out forwards; box-shadow: 0 0 15px var(--color); z-index: 99; }
-        @keyframes pulseOut { 
-          0% { transform: scale(1); opacity: 1; }
-          100% { transform: scale(80); opacity: 0; }
-        }
-
+        .mystic-bg { position: absolute; inset: 0; background: radial-gradient(circle at 50% 35%, var(--color) 0%, #000 85%); opacity: 0.35; transition: 2s; }
+        .tap-pulse { position: absolute; width: 4px; height: 4px; background: #fff; border-radius: 50%; pointer-events: none; animation: pulseOut 1s ease-out forwards; box-shadow: 0 0 20px var(--color); z-index: 99; }
+        @keyframes pulseOut { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(65); opacity: 0; } }
         .ui-wrapper { position: relative; z-index: 10; height: 100dvh; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
         .header { display: flex; justify-content: flex-end; width: 100%; }
-        
-        .mini-wallet-btn { background: rgba(255,255,255,0.08) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: #fff !important; border-radius: 100px !important; padding: 6px 14px !important; }
-        .vibrant-name-fix { color: #fff !important; font-weight: 700 !important; margin-left: 8px !important; font-size: 13px !important; }
-
-        .ritual-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 40px; margin-top: -20px; }
-        .aura-focus { position: relative; width: 160px; height: 160px; display: flex; align-items: center; justify-content: center; }
-        .core { width: 55px; height: 55px; background: #fff; border-radius: 50%; box-shadow: 0 0 45px var(--glow); transition: 1s; }
-        .core.active { transform: scale(1.3); filter: brightness(1.2); }
+        .mini-wallet-btn { background: rgba(0,0,0,0.6) !important; border: 1px solid rgba(255,255,255,0.2) !important; color: #fff !important; border-radius: 100px !important; padding: 8px 16px !important; }
+        .vibrant-name-fix { color: #fff !important; font-weight: 700 !important; margin-left: 8px !important; font-size: 14px !important; }
+        .ritual-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 35px; margin-top: -30px; }
+        .aura-focus { position: relative; width: 170px; height: 170px; display: flex; align-items: center; justify-content: center; }
+        .core { width: 55px; height: 55px; background: #fff; border-radius: 50%; box-shadow: 0 0 50px var(--glow); transition: 1s; }
+        .core.active { transform: scale(1.35); filter: brightness(1.2); }
         .rings span { position: absolute; inset: 0; border: 1px solid var(--glow); border-radius: 50%; opacity: 0; animation: waves 3s infinite linear; }
-        @keyframes waves { 0% { transform: scale(0.6); opacity: 0.8; } 100% { transform: scale(2.2); opacity: 0; } }
-
-        .content-box { display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; }
-        .title { font-size: 1.5rem; font-weight: 200; letter-spacing: 10px; margin: 0; line-height: 1.2; }
-        .subtitle { font-size: 9px; color: #666; letter-spacing: 3px; text-transform: uppercase; margin-top: 8px; margin-bottom: 25px; }
-
-        .ritual-btn { background: #fff; color: #000; border: none; padding: 16px 50px; border-radius: 100px; font-weight: 900; font-size: 14px; cursor: pointer; transition: 0.2s; }
-        .ritual-btn:active { transform: scale(0.95); opacity: 0.9; }
-        
-        .mood-result h2 { font-size: 1.4rem; letter-spacing: 2px; margin: 0 0 5px 0; }
-        .mood-result p { font-size: 11px; color: #888; margin: 0; font-style: italic; }
+        @keyframes waves { 0% { transform: scale(0.6); opacity: 0.8; } 100% { transform: scale(2.4); opacity: 0; } }
+        .content-box { display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; gap: 10px; }
+        .title { font-size: 1.6rem; font-weight: 200; letter-spacing: 12px; margin: 0; text-indent: 12px; }
+        .subtitle { font-size: 10px; color: #888; letter-spacing: 4px; text-transform: uppercase; margin-top: 5px; margin-bottom: 25px; }
+        .ritual-btn { background: #fff; color: #000; border: none; padding: 16px 52px; border-radius: 100px; font-weight: 900; font-size: 14px; cursor: pointer; transition: 0.2s; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .ritual-btn:active { transform: scale(0.95); }
+        .mood-result { animation: fadeIn 1s ease-out; max-width: 300px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .mood-result h2 { font-size: 1.5rem; letter-spacing: 3px; margin: 0 0 10px 0; text-transform: uppercase; }
+        .generative-text { font-size: 13px; color: #ccc; margin: 0; line-height: 1.5; }
+        .generative-text b { color: #fff; text-transform: uppercase; }
+        .tx-count { font-size: 10px; color: #666; margin-top: 15px; display: block; text-transform: uppercase; letter-spacing: 1px; }
       `}</style>
     </main>
   );
