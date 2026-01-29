@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { ConnectWallet, Wallet, WalletDropdown, WalletDropdownDisconnect } from '@coinbase/onchainkit/wallet';
 import { Identity, Avatar, Name, Address } from '@coinbase/onchainkit/identity';
 import { useAccount, useSendTransaction, useSwitchChain, useTransactionCount } from 'wagmi';
@@ -31,7 +31,7 @@ export default function Home() {
   const [stage, setStage] = useState<'idle' | 'syncing' | 'synced'>('idle');
   const [pulses, setPulses] = useState<{ id: number; x: number; y: number }[]>([]);
 
-  // Логика тапов по экрану
+  // Всплески при тапе
   const handleGlobalTap = (e: React.MouseEvent | React.TouchEvent) => {
     const x = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
     const y = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
@@ -56,18 +56,16 @@ export default function Home() {
         await switchChainAsync({ chainId: base.id });
       }
 
-      // Используем асинхронную версию для лучшего контроля в Base App
       await sendTransactionAsync({
         to: address as `0x${string}`,
         value: parseEther('0'),
         data: '0x417572612050756c73652052697475616c' as `0x${string}`,
-        chainId: base.id, // Явно указываем сеть
+        chainId: base.id,
       });
 
       await refetchTxCount();
       setStage('synced');
-    } catch (err) {
-      console.error("Tx Error:", err);
+    } catch {
       setStage('idle');
     }
   };
@@ -76,7 +74,6 @@ export default function Home() {
     <main className="app-container" onMouseDown={handleGlobalTap} onTouchStart={handleGlobalTap}>
       <div className="mystic-bg" style={{ '--color': myMood.color } as React.CSSProperties}></div>
       
-      {/* Рендеринг всплесков от тапов */}
       {pulses.map(p => (
         <div key={p.id} className="tap-pulse" style={{ left: p.x, top: p.y, '--color': myMood.color } as React.CSSProperties}></div>
       ))}
@@ -113,53 +110,4 @@ export default function Home() {
             ) : (
               <div className="branding">
                 <h1 className="title">AURA PULSE</h1>
-                <p className="subtitle">Establish Connection</p>
-              </div>
-            )}
-
-            {isConnected && stage !== 'synced' && (
-              <button onClick={handleCheckAura} className="ritual-btn" disabled={stage === 'syncing'}>
-                {stage === 'syncing' ? 'SYNCING...' : 'CHECK AURA'}
-              </button>
-            )}
-          </div>
-        </section>
-      </div>
-
-      <style jsx global>{`
-        body { background: #000; color: #fff; margin: 0; overflow: hidden; font-family: -apple-system, sans-serif; height: 100dvh; }
-        .app-container { position: relative; height: 100dvh; width: 100vw; overflow: hidden; touch-action: none; }
-        .mystic-bg { position: absolute; inset: 0; background: radial-gradient(circle at 50% 35%, var(--color) 0%, #000 80%); opacity: 0.2; transition: 2s; }
-        
-        /* Всплеск при тапе */
-        .tap-pulse { position: absolute; width: 2px; height: 2px; background: #fff; border-radius: 50%; pointer-events: none; animation: pulseOut 0.8s ease-out forwards; box-shadow: 0 0 15px var(--color); z-index: 99; }
-        @keyframes pulseOut { 
-          0% { transform: scale(1); opacity: 1; }
-          100% { transform: scale(80); opacity: 0; }
-        }
-
-        .ui-wrapper { position: relative; z-index: 10; height: 100dvh; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
-        .header { display: flex; justify-content: flex-end; width: 100%; }
-        
-        /* Фикс белого на белом в кнопке кошелька */
-        .mini-wallet-btn { background: rgba(255,255,255,0.1) !important; border: 1px solid rgba(255,255,255,0.2) !important; color: #fff !important; border-radius: 100px !important; padding: 6px 14px !important; }
-        .vibrant-name-fix { color: #fff !important; font-weight: 700 !important; margin-left: 8px !important; font-size: 13px !important; }
-
-        .ritual-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 30px; margin-top: -40px; }
-        .aura-focus { position: relative; width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; }
-        .core { width: 60px; height: 60px; background: #fff; border-radius: 50%; box-shadow: 0 0 50px var(--glow); transition: 1s; }
-        .core.active { transform: scale(1.3); filter: brightness(1.2); }
-        .rings span { position: absolute; inset: 0; border: 1px solid var(--glow); border-radius: 50%; opacity: 0; animation: waves 3s infinite linear; }
-        @keyframes waves { 0% { transform: scale(0.6); opacity: 0.8; } 100% { transform: scale(2.2); opacity: 0; } }
-
-        .content-box { display: flex; flex-direction: column; align-items: center; gap: 20px; text-align: center; }
-        .title { font-size: 1.6rem; font-weight: 200; letter-spacing: 10px; margin: 0; }
-        .subtitle { font-size: 10px; color: #666; letter-spacing: 3px; text-transform: uppercase; margin-top: 5px; }
-
-        .ritual-btn { background: #fff; color: #000; border: none; padding: 16px 50px; border-radius: 100px; font-weight: 900; font-size: 14px; cursor: pointer; }
-        .mood-result h2 { font-size: 1.4rem; letter-spacing: 2px; margin-bottom: 5px; }
-        .mood-result p { font-size: 12px; color: #888; margin: 0; font-style: italic; }
-      `}</style>
-    </main>
-  );
-}
+                <p className="subtitle">Establish
