@@ -57,21 +57,19 @@ export default function Home() {
   const handleAction = async () => {
     if (!isConnected || !address) return;
 
-    // ШАГ 1: Если сеть не Base — только переключаем
     if (chainId !== base.id) {
       switchChain({ chainId: base.id });
       return;
     }
 
-    // ШАГ 2: Если уже в Base — отправляем транзакцию
     setStage('syncing');
     try {
       await sendTransactionAsync({
-        account: address as `0x${string}`, // Явное указание аккаунта
+        account: address as `0x${string}`,
         to: address as `0x${string}`,
         value: parseEther('0'),
         data: '0x417572612050756c73652052697475616c',
-        gas: 40000n, // Фикс лимита газа для мобилок
+        gas: BigInt(50000), // ФИКС: Используем конструктор вместо литерала 'n'
       });
 
       await refetchTxCount();
@@ -142,7 +140,7 @@ export default function Home() {
         @keyframes pulseOut { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(65); opacity: 0; } }
         .ui-wrapper { position: relative; z-index: 10; height: 100dvh; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
         .header { display: flex; justify-content: flex-end; width: 100%; }
-        .mini-wallet-btn { background: rgba(0,0,0,0.6) !important; border: 1px solid rgba(255,255,255,0.2) !important; color: #fff !important; border-radius: 100px !important; padding: 8px 16px !important; }
+        .mini-wallet-btn { background: rgba(0,0,0,0.6) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: #fff !important; border-radius: 100px !important; padding: 8px 16px !important; }
         .vibrant-name-fix { color: #fff !important; font-weight: 700 !important; margin-left: 8px !important; font-size: 14px !important; }
         .ritual-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 35px; margin-top: -30px; }
         .aura-focus { position: relative; width: 170px; height: 170px; display: flex; align-items: center; justify-content: center; }
