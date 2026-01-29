@@ -19,9 +19,9 @@ export const metadata: Metadata = {
   // 1. ФИКС ИКОНКИ: Это убирает логотип Vercel из превью
   icons: {
     icon: [
-      { url: '/icon.png', size: '32x32' },
-      { url: '/icon.png', size: '192x192' },
-      { url: '/icon.png', size: '512x512' },
+      { url: '/icon.png', sizes: '32x32' },
+      { url: '/icon.png', sizes: '192x192' },
+      { url: '/icon.png', sizes: '512x512' },
     ],
     apple: '/icon.png',
   },
