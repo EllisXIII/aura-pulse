@@ -31,7 +31,6 @@ export default function Home() {
   const [stage, setStage] = useState<'idle' | 'syncing' | 'synced'>('idle');
   const [pulses, setPulses] = useState<{ id: number; x: number; y: number }[]>([]);
 
-  // Всплески при тапе по всему экрану
   const handleGlobalTap = (e: React.MouseEvent | React.TouchEvent) => {
     const x = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
     const y = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
@@ -52,20 +51,23 @@ export default function Home() {
     setStage('syncing');
     
     try {
+      // 1. Смена сети с обязательным ожиданием
       if (chainId !== base.id) {
         await switchChainAsync({ chainId: base.id });
+        await new Promise(resolve => setTimeout(resolve, 1000)); // Ждем 1 сек, пока кошелек "протрет глаза"
       }
 
+      // 2. Отправка транзакции БЕЗ явного chainId (пусть wagmi возьмет его из активного сигнера)
       await sendTransactionAsync({
         to: address as `0x${string}`,
         value: parseEther('0'),
-        data: '0x417572612050756c73652052697475616c' as `0x${string}`,
-        chainId: base.id, // Жесткая привязка к сети Base
+        data: '0x417572612050756c73652052697475616c',
       });
 
       await refetchTxCount();
       setStage('synced');
-    } catch {
+    } catch (err) {
+      console.error("Tx Error:", err);
       setStage('idle');
     }
   };
@@ -126,7 +128,7 @@ export default function Home() {
       <style jsx global>{`
         body { background: #000; color: #fff; margin: 0; overflow: hidden; font-family: sans-serif; height: 100dvh; }
         .app-container { position: relative; height: 100dvh; width: 100vw; overflow: hidden; touch-action: none; }
-        .mystic-bg { position: absolute; inset: 0; background: radial-gradient(circle at 50% 35%, var(--color) 0%, #000 80%); opacity: 0.2; transition: 2s; }
+        .mystic-bg { position: absolute; inset: 0; background: radial-gradient(circle at 50% 35%, var(--color) 0%, #000 80%); opacity: 0.25; transition: 2s; }
         
         .tap-pulse { position: absolute; width: 2px; height: 2px; background: #fff; border-radius: 50%; pointer-events: none; animation: pulseOut 0.8s ease-out forwards; box-shadow: 0 0 15px var(--color); z-index: 99; }
         @keyframes pulseOut { 
@@ -137,23 +139,25 @@ export default function Home() {
         .ui-wrapper { position: relative; z-index: 10; height: 100dvh; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
         .header { display: flex; justify-content: flex-end; width: 100%; }
         
-        .mini-wallet-btn { background: rgba(0,0,0,0.5) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: #fff !important; border-radius: 100px !important; padding: 6px 14px !important; }
+        .mini-wallet-btn { background: rgba(255,255,255,0.08) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: #fff !important; border-radius: 100px !important; padding: 6px 14px !important; }
         .vibrant-name-fix { color: #fff !important; font-weight: 700 !important; margin-left: 8px !important; font-size: 13px !important; }
 
-        .ritual-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 30px; margin-top: -30px; }
+        .ritual-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 40px; margin-top: -20px; }
         .aura-focus { position: relative; width: 160px; height: 160px; display: flex; align-items: center; justify-content: center; }
-        .core { width: 50px; height: 50px; background: #fff; border-radius: 50%; box-shadow: 0 0 40px var(--glow); transition: 1s; }
+        .core { width: 55px; height: 55px; background: #fff; border-radius: 50%; box-shadow: 0 0 45px var(--glow); transition: 1s; }
         .core.active { transform: scale(1.3); filter: brightness(1.2); }
         .rings span { position: absolute; inset: 0; border: 1px solid var(--glow); border-radius: 50%; opacity: 0; animation: waves 3s infinite linear; }
         @keyframes waves { 0% { transform: scale(0.6); opacity: 0.8; } 100% { transform: scale(2.2); opacity: 0; } }
 
-        .content-box { display: flex; flex-direction: column; align-items: center; gap: 15px; text-align: center; width: 100%; }
-        .title { font-size: 1.5rem; font-weight: 200; letter-spacing: 8px; margin: 0; line-height: 1; }
-        .subtitle { font-size: 9px; color: #555; letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+        .content-box { display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; }
+        .title { font-size: 1.5rem; font-weight: 200; letter-spacing: 10px; margin: 0; line-height: 1.2; }
+        .subtitle { font-size: 9px; color: #666; letter-spacing: 3px; text-transform: uppercase; margin-top: 8px; margin-bottom: 25px; }
 
-        .ritual-btn { background: #fff; color: #000; border: none; padding: 14px 40px; border-radius: 100px; font-weight: 900; font-size: 13px; cursor: pointer; }
-        .mood-result h2 { font-size: 1.3rem; letter-spacing: 1px; margin-bottom: 5px; }
-        .mood-result p { font-size: 11px; color: #666; margin: 0; font-style: italic; }
+        .ritual-btn { background: #fff; color: #000; border: none; padding: 16px 50px; border-radius: 100px; font-weight: 900; font-size: 14px; cursor: pointer; transition: 0.2s; }
+        .ritual-btn:active { transform: scale(0.95); opacity: 0.9; }
+        
+        .mood-result h2 { font-size: 1.4rem; letter-spacing: 2px; margin: 0 0 5px 0; }
+        .mood-result p { font-size: 11px; color: #888; margin: 0; font-style: italic; }
       `}</style>
     </main>
   );
