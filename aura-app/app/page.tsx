@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ConnectWallet, Wallet, WalletDropdown, WalletDropdownDisconnect } from '@coinbase/onchainkit/wallet';
 import { Identity, Avatar, Name, Address } from '@coinbase/onchainkit/identity';
-import { useAccount, useSendTransaction, useSwitchChain, useTransactionCount, useBalance } from 'wagmi';
+import { useAccount, useSendTransaction, useSwitchChain, useTransactionCount } from 'wagmi';
 import { base } from 'wagmi/chains';
 import { parseEther } from 'viem';
 
@@ -25,15 +25,20 @@ const AURA_MOODS = [
 export default function Home() {
   const { isConnected, address, chainId } = useAccount();
   const { switchChainAsync } = useSwitchChain();
-  const { sendTransaction } = useSendTransaction();
+  const { sendTransactionAsync } = useSendTransaction();
   const { data: txCount, refetch: refetchTxCount } = useTransactionCount({ address, chainId: base.id });
   
-  // Добавляем хук баланса, чтобы кошелек "видел" средства перед транзакцией
-  const { refetch: refetchBalance } = useBalance({ address });
-
   const [stage, setStage] = useState<'idle' | 'syncing' | 'synced'>('idle');
-  const [splash, setSplash] = useState(false);
-  const [impulseStats, setImpulseStats] = useState<Record<string, number>>({});
+  const [pulses, setPulses] = useState<{ id: number; x: number; y: number }[]>([]);
+
+  // Логика тапов по экрану
+  const handleGlobalTap = (e: React.MouseEvent | React.TouchEvent) => {
+    const x = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
+    const y = 'touches' in e ? e.touches[0].clientY : (e as React.MouseEvent).clientY;
+    const id = Date.now();
+    setPulses(prev => [...prev, { id, x, y }]);
+    setTimeout(() => setPulses(prev => prev.filter(p => p.id !== id)), 800);
+  };
 
   const myMood = useMemo(() => {
     if (!address) return AURA_MOODS[0];
@@ -42,54 +47,46 @@ export default function Home() {
     return AURA_MOODS[index];
   }, [address, txCount]);
 
-  const generativeText = useMemo(() => {
-    if (!isConnected) return "";
-    return `Resonance confirmed. Your ${txCount || 0} steps on Base stabilized your frequency.`;
-  }, [isConnected, txCount]);
-
   const handleCheckAura = async () => {
     if (!isConnected || !address) return;
-    
     setStage('syncing');
+    
     try {
       if (chainId !== base.id) {
         await switchChainAsync({ chainId: base.id });
-        await refetchBalance();
       }
 
-      sendTransaction({
+      // Используем асинхронную версию для лучшего контроля в Base App
+      await sendTransactionAsync({
         to: address as `0x${string}`,
         value: parseEther('0'),
         data: '0x417572612050756c73652052697475616c' as `0x${string}`,
-      }, {
-        onSuccess: async () => {
-          await refetchTxCount();
-          setStage('synced');
-        },
-        onError: (err) => {
-          console.error(err);
-          setStage('idle');
-        },
+        chainId: base.id, // Явно указываем сеть
       });
-    } catch {
+
+      await refetchTxCount();
+      setStage('synced');
+    } catch (err) {
+      console.error("Tx Error:", err);
       setStage('idle');
     }
   };
 
-  const friends = [
-    { addr: '0x838aD0EAE54F99F1926dA7C3b6bFbF617389B4D9', name: '0x838a...B4D9', color: '#10b981' },
-    { addr: '0x02feeb0AdE57b6adEEdE5A4EEea6Cf8c21BeB6B1', name: 'zizzamia.eth', color: '#a855f7' }
-  ].filter(f => (impulseStats[f.addr] || 0) < 2);
-
   return (
-    <main className={`app-container ${stage}`}>
+    <main className="app-container" onMouseDown={handleGlobalTap} onTouchStart={handleGlobalTap}>
       <div className="mystic-bg" style={{ '--color': myMood.color } as React.CSSProperties}></div>
+      
+      {/* Рендеринг всплесков от тапов */}
+      {pulses.map(p => (
+        <div key={p.id} className="tap-pulse" style={{ left: p.x, top: p.y, '--color': myMood.color } as React.CSSProperties}></div>
+      ))}
+
       <div className="ui-wrapper">
         <header className="header">
           <Wallet>
-            <ConnectWallet className="vibrant-wallet">
+            <ConnectWallet className="mini-wallet-btn">
               <Avatar className="h-5 w-5" />
-              <Name className="vibrant-name" />
+              <Name className="vibrant-name-fix" />
             </ConnectWallet>
             <WalletDropdown>
               <Identity className="px-4 pt-3 pb-2" hasCopyAddressOnClick><Avatar /><Name /><Address /></Identity>
@@ -100,82 +97,68 @@ export default function Home() {
 
         <section className="ritual-main">
           <div className="aura-focus">
-            <div className={`core ${stage === 'synced' ? 'active' : ''} ${splash ? 'splash' : ''}`} 
+            <div className={`core ${stage === 'synced' ? 'active' : ''}`} 
                  style={{ '--glow': myMood.color } as React.CSSProperties}></div>
             <div className="rings" style={{ '--glow': myMood.color } as React.CSSProperties}>
               <span></span><span></span>
             </div>
           </div>
 
-          {stage === 'synced' && (
-            <div className="mood-card visible">
-              <h2 style={{ color: myMood.color }}>{myMood.name}</h2>
-              <p className="description">{generativeText}</p>
-            </div>
-          )}
-
-          <div className="branding">
-            <h1 className="title">AURA PULSE</h1>
-            <p className="subtitle">{stage === 'synced' ? 'ONCHAIN STABLE' : 'Establish Connection'}</p>
-          </div>
-
-          {isConnected && stage !== 'synced' && (
-            <button onClick={handleCheckAura} className="ritual-btn" disabled={stage === 'syncing'}>
-              {stage === 'syncing' ? 'SYNCING...' : 'CHECK AURA'}
-            </button>
-          )}
-        </section>
-
-        <section className="social-panel">
-          <span className="panel-label">Resonances</span>
-          <div className="friends-grid">
-            {friends.slice(0, 2).map(f => ( // Показываем только 2 для компактности
-              <div key={f.addr} className="friend-card" onClick={() => {
-                setSplash(true);
-                setImpulseStats(prev => ({ ...prev, [f.addr]: (prev[f.addr] || 0) + 1 }));
-                setTimeout(() => setSplash(false), 800);
-              }}>
-                <div className="flicker-orb" style={{ '--orb-color': f.color } as React.CSSProperties}></div>
-                <div className="friend-details">
-                  <span className="friend-name-text">{f.name}</span>
-                </div>
+          <div className="content-box">
+            {stage === 'synced' ? (
+              <div className="mood-result">
+                <h2 style={{ color: myMood.color }}>{myMood.name}</h2>
+                <p>Resonance frequency stable.</p>
               </div>
-            ))}
+            ) : (
+              <div className="branding">
+                <h1 className="title">AURA PULSE</h1>
+                <p className="subtitle">Establish Connection</p>
+              </div>
+            )}
+
+            {isConnected && stage !== 'synced' && (
+              <button onClick={handleCheckAura} className="ritual-btn" disabled={stage === 'syncing'}>
+                {stage === 'syncing' ? 'SYNCING...' : 'CHECK AURA'}
+              </button>
+            )}
           </div>
         </section>
       </div>
 
       <style jsx global>{`
-        body { background: #000; color: #fff; margin: 0; overflow: hidden; font-family: sans-serif; height: 100dvh; }
-        .mystic-bg { position: absolute; inset: 0; background: radial-gradient(circle at 50% 30%, var(--color) 0%, #000 100%); opacity: 0.15; }
-        .ui-wrapper { height: 100dvh; display: flex; flex-direction: column; padding: 15px; justify-content: space-between; position: relative; z-index: 10; }
+        body { background: #000; color: #fff; margin: 0; overflow: hidden; font-family: -apple-system, sans-serif; height: 100dvh; }
+        .app-container { position: relative; height: 100dvh; width: 100vw; overflow: hidden; touch-action: none; }
+        .mystic-bg { position: absolute; inset: 0; background: radial-gradient(circle at 50% 35%, var(--color) 0%, #000 80%); opacity: 0.2; transition: 2s; }
         
-        .header { display: flex; justify-content: flex-end; }
-        .vibrant-wallet { background: #fff !important; color: #000 !important; border-radius: 50px !important; padding: 6px 16px !important; font-size: 12px !important; }
+        /* Всплеск при тапе */
+        .tap-pulse { position: absolute; width: 2px; height: 2px; background: #fff; border-radius: 50%; pointer-events: none; animation: pulseOut 0.8s ease-out forwards; box-shadow: 0 0 15px var(--color); z-index: 99; }
+        @keyframes pulseOut { 
+          0% { transform: scale(1); opacity: 1; }
+          100% { transform: scale(80); opacity: 0; }
+        }
 
-        .ritual-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; }
-        .aura-focus { position: relative; width: 140px; height: 140px; display: flex; align-items: center; justify-content: center; }
-        .core { width: 50px; height: 50px; background: #fff; border-radius: 50%; box-shadow: 0 0 40px var(--glow); transition: 1s; }
-        .core.active { transform: scale(1.2); }
+        .ui-wrapper { position: relative; z-index: 10; height: 100dvh; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
+        .header { display: flex; justify-content: flex-end; width: 100%; }
         
-        .title { font-size: 1.4rem; letter-spacing: 8px; margin: 5px 0; font-weight: 200; }
-        .subtitle { font-size: 9px; color: #444; text-transform: uppercase; letter-spacing: 2px; }
+        /* Фикс белого на белом в кнопке кошелька */
+        .mini-wallet-btn { background: rgba(255,255,255,0.1) !important; border: 1px solid rgba(255,255,255,0.2) !important; color: #fff !important; border-radius: 100px !important; padding: 6px 14px !important; }
+        .vibrant-name-fix { color: #fff !important; font-weight: 700 !important; margin-left: 8px !important; font-size: 13px !important; }
 
-        .ritual-btn { background: #fff; color: #000; border: none; padding: 12px 40px; border-radius: 50px; font-weight: 800; font-size: 13px; margin-top: 15px; }
+        .ritual-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 30px; margin-top: -40px; }
+        .aura-focus { position: relative; width: 180px; height: 180px; display: flex; align-items: center; justify-content: center; }
+        .core { width: 60px; height: 60px; background: #fff; border-radius: 50%; box-shadow: 0 0 50px var(--glow); transition: 1s; }
+        .core.active { transform: scale(1.3); filter: brightness(1.2); }
+        .rings span { position: absolute; inset: 0; border: 1px solid var(--glow); border-radius: 50%; opacity: 0; animation: waves 3s infinite linear; }
+        @keyframes waves { 0% { transform: scale(0.6); opacity: 0.8; } 100% { transform: scale(2.2); opacity: 0; } }
 
-        .social-panel { background: rgba(255,255,255,0.03); border-radius: 20px; padding: 15px; margin-bottom: 5px; }
-        .panel-label { font-size: 9px; color: #666; text-transform: uppercase; display: block; margin-bottom: 10px; }
-        .friends-grid { display: flex; gap: 10px; }
-        .friend-card { flex: 1; display: flex; align-items: center; background: rgba(255,255,255,0.05); padding: 8px 12px; border-radius: 15px; gap: 10px; }
-        .flicker-orb { width: 12px; height: 12px; border-radius: 50%; background: var(--orb-color); box-shadow: 0 0 10px var(--orb-color); }
-        .friend-name-text { font-size: 11px; font-weight: 600; }
+        .content-box { display: flex; flex-direction: column; align-items: center; gap: 20px; text-align: center; }
+        .title { font-size: 1.6rem; font-weight: 200; letter-spacing: 10px; margin: 0; }
+        .subtitle { font-size: 10px; color: #666; letter-spacing: 3px; text-transform: uppercase; margin-top: 5px; }
 
-        .mood-card { text-align: center; }
-        .mood-card h2 { font-size: 1.2rem; margin: 0; }
-        .description { font-size: 0.75rem; color: #888; margin-top: 5px; max-width: 200px; }
-        
-        .rings span { position: absolute; inset: 0; border: 1px solid var(--glow); border-radius: 50%; opacity: 0; animation: waves 4s infinite linear; }
-        @keyframes waves { 0% { transform: scale(0.6); opacity: 0.6; } 100% { transform: scale(2); opacity: 0; } }
+        .ritual-btn { background: #fff; color: #000; border: none; padding: 16px 50px; border-radius: 100px; font-weight: 900; font-size: 14px; cursor: pointer; }
+        .mood-result h2 { font-size: 1.4rem; letter-spacing: 2px; margin-bottom: 5px; }
+        .mood-result p { font-size: 12px; color: #888; margin: 0; font-style: italic; }
       `}</style>
     </main>
   );
