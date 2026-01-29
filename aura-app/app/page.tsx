@@ -52,10 +52,9 @@ export default function Home() {
     
     setStage('syncing');
     try {
-      // КРИТИЧЕСКИЙ ФИКС: Принудительно переключаем на Base перед транзакцией
       if (chainId !== base.id) {
         await switchChainAsync({ chainId: base.id });
-        await refetchBalance(); // Обновляем баланс после смены сети
+        await refetchBalance();
       }
 
       sendTransaction({
@@ -72,7 +71,7 @@ export default function Home() {
           setStage('idle');
         },
       });
-    } catch (e) {
+    } catch {
       setStage('idle');
     }
   };
