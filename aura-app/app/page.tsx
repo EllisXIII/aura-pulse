@@ -5,7 +5,6 @@ import { ConnectWallet, Wallet, WalletDropdown, WalletDropdownDisconnect } from 
 import { Identity, Avatar, Name, Address } from '@coinbase/onchainkit/identity';
 import { useAccount, useSignMessage, useSwitchChain, useTransactionCount } from 'wagmi';
 import { base } from 'wagmi/chains';
-// Импортируем SDK как объект по умолчанию для лучшей совместимости
 import sdk from '@farcaster/miniapp-sdk';
 
 const AURA_MOODS = [
@@ -87,7 +86,8 @@ Frequency: ${myMood.meaning}
 Check your aura on Base. 🔮`;
 
     try {
-      // ФИКС ТИПОВ: Принудительно кастим к any, чтобы линтер не ругался на share
+      // ФИКС ДЛЯ БИЛДА: отключение правила any только для этой строки
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (sdk.actions as any).share({
         text: shareText,
         embeds: [imageUrl, appUrl],
