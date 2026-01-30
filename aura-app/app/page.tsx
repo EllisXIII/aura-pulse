@@ -5,7 +5,6 @@ import { ConnectWallet, Wallet, WalletDropdown, WalletDropdownDisconnect } from 
 import { Identity, Avatar, Name, Address } from '@coinbase/onchainkit/identity';
 import { useAccount, useSignMessage, useSwitchChain, useTransactionCount } from 'wagmi';
 import { base } from 'wagmi/chains';
-// Используем дефолтный импорт для совместимости с твоей версией SDK
 import sdk from '@farcaster/miniapp-sdk';
 
 const AURA_MOODS = [
@@ -33,7 +32,6 @@ export default function Home() {
   const [pulses, setPulses] = useState<{ id: number; x: number; y: number }[]>([]);
   const [centerWaves, setCenterWaves] = useState<{ id: number }[]>([]);
 
-  // Инициализация MiniKit
   useEffect(() => {
     const init = async () => {
       if (typeof window !== 'undefined') {
@@ -44,7 +42,6 @@ export default function Home() {
   }, []);
 
   const handlePulseTrigger = (e: React.MouseEvent | React.TouchEvent) => {
-    // Не запускаем анимацию, если кликнули по кнопке
     if (e.target instanceof HTMLElement && e.target.closest('button')) return;
 
     const x = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
@@ -88,7 +85,9 @@ export default function Home() {
         message: `Aura Pulse Ritual\n\nSynchronizing frequency for:\n${address}\n\nActivity Level: ${activityLevel}`,
       });
       setStage('synced');
-    } catch { setStage('idle'); }
+    } catch { 
+      setStage('idle'); 
+    }
   };
 
   const handleShare = async (e: React.MouseEvent) => {
@@ -98,27 +97,22 @@ export default function Home() {
     const colorParam = myMood.color.replace('#', '');
     const imageUrl = `https://aura-pulse.vercel.app/api/og?color=${colorParam}&trait=${myMood.trait}`;
     const appUrl = 'https://aura-pulse.vercel.app';
-    
-    // Текст поста для Warpcast
     const shareText = `I established my onchain frequency: ${myMood.trait} (${activityLevel}) on Aura Pulse. 🔮\n\nFrequency: ${myMood.meaning}`;
 
     try {
-      // КРИТИЧЕСКИЙ ФИКС: Используем createCast для нативного поста в Base App / Farcaster
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (sdk.actions as any).createCast({
         text: shareText,
         embeds: [imageUrl, appUrl],
       });
-    } catch (err) {
-      console.log("SDK Cast failed, fallback to clipboard");
+    } catch {
       navigator.clipboard.writeText(`${shareText}\n\n${appUrl}`);
-      alert("Results copied! Share them manually in Warpcast.");
+      alert("Results copied! Share them in Warpcast.");
     }
   };
 
   return (
     <main className="app-container" onMouseDown={handlePulseTrigger} onTouchStart={handlePulseTrigger}>
-      {/* СЛОЙ ЭФФЕКТОВ */}
       <div className="fx-layer">
         {pulses.map(p => (
           <div key={p.id} className="tap-pulse" style={{ left: p.x, top: p.y, '--color': myMood.color } as React.CSSProperties}></div>
@@ -177,53 +171,32 @@ export default function Home() {
       <style jsx global>{`
         body { background: #000; color: #fff; margin: 0; overflow: hidden; font-family: -apple-system, sans-serif; height: 100dvh; }
         .app-container { position: relative; height: 100dvh; width: 100vw; background: #000; overflow: hidden; touch-action: manipulation; }
-        
         .fx-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
         .tap-pulse { position: absolute; width: 4px; height: 4px; background: #fff; border-radius: 50%; animation: pulseOut 1s ease-out forwards; box-shadow: 0 0 20px var(--color); }
         @keyframes pulseOut { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(60); opacity: 0; } }
-
         .center-resonance { position: absolute; left: 50%; top: 35%; width: 10px; height: 10px; background: transparent; border: 2px solid var(--color); border-radius: 50%; transform: translate(-50%, -50%); animation: centerWave 1.2s ease-out forwards; }
         @keyframes centerWave { 0% { transform: translate(-50%, -50%) scale(0); opacity: 0.8; } 100% { transform: translate(-50%, -50%) scale(45); opacity: 0; } }
-
         .mystic-bg { position: absolute; inset: 0; background: radial-gradient(circle at 50% 35%, var(--color) 0%, #000 85%); opacity: 0.3; z-index: 1; }
         .ui-wrapper { position: relative; z-index: 10; height: 100dvh; display: flex; flex-direction: column; padding: 20px; pointer-events: none; }
         .header, .ritual-main, .mini-wallet-btn, .ritual-btn, .share-btn, .mood-result { pointer-events: auto; }
-
         .header { display: flex; justify-content: flex-end; }
         .mini-wallet-btn { background: rgba(0,0,0,0.6) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: #fff !important; border-radius: 100px !important; padding: 8px 16px !important; }
         .vibrant-name-fix { color: #fff !important; font-weight: 700 !important; margin-left: 8px !important; font-size: 14px !important; }
-
         .ritual-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 35px; margin-top: -40px; }
         .aura-focus { position: relative; width: 170px; height: 170px; display: flex; align-items: center; justify-content: center; }
         .core { width: 55px; height: 55px; background: #fff; border-radius: 50%; box-shadow: 0 0 50px var(--glow); transition: 1s; }
         .core.active { transform: scale(1.4); filter: brightness(1.2); }
         .rings span { position: absolute; inset: 0; border: 1px solid var(--glow); border-radius: 50%; opacity: 0; animation: waves 4s infinite linear; }
         @keyframes waves { 0% { transform: scale(0.5); opacity: 0.5; } 100% { transform: scale(2.5); opacity: 0; } }
-
         .content-box { display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; }
         .title { font-size: 1.6rem; font-weight: 200; letter-spacing: 12px; margin: 0; text-indent: 12px; }
         .subtitle { font-size: 10px; color: #666; letter-spacing: 4px; text-transform: uppercase; margin: 8px 0 30px 0; }
-
         .ritual-btn { background: #fff; color: #000; border: none; padding: 18px 60px; border-radius: 100px; font-weight: 900; font-size: 14px; cursor: pointer; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
-        
         .mood-result { animation: fadeIn 0.8s ease-out; max-width: 320px; display: flex; flex-direction: column; align-items: center; }
         .mood-card { background: rgba(255,255,255,0.03); padding: 18px; border-radius: 24px; border: 1px solid rgba(255,255,255,0.08); margin: 15px 0; }
         .generative-text { font-size: 13px; color: #ccc; margin: 0; line-height: 1.6; }
         .tx-count { font-size: 10px; color: #444; text-transform: uppercase; letter-spacing: 1px; margin-top: 5px; }
-
-        .share-btn { 
-          margin-top: 25px; 
-          background: #fff; 
-          color: #000; 
-          border: none; 
-          padding: 14px 35px; 
-          border-radius: 100px; 
-          font-weight: 800; 
-          font-size: 12px; 
-          cursor: pointer; 
-          box-shadow: 0 0 25px var(--btn-color);
-          transition: 0.2s;
-        }
+        .share-btn { margin-top: 25px; background: #fff; color: #000; border: none; padding: 14px 35px; border-radius: 100px; font-weight: 800; font-size: 12px; cursor: pointer; box-shadow: 0 0 25px var(--btn-color); transition: 0.2s; }
         .share-btn:active { transform: scale(0.95); opacity: 0.9; }
       `}</style>
     </main>
