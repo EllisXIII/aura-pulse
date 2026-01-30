@@ -7,6 +7,10 @@ import { useAccount, useSignMessage, useSwitchChain, useTransactionCount } from 
 import { base } from 'wagmi/chains';
 import sdk from '@farcaster/miniapp-sdk';
 
+const ROOT_URL = 
+  process.env.NEXT_PUBLIC_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://aura-pulse.vercel.app');
+
 const AURA_MOODS = [
   { name: 'VIOLET NEBULA', color: '#a855f7', trait: 'Intuitive', meaning: 'Your frequency aligns with the unseen. You perceive patterns within the digital noise.' },
   { name: 'CYBER EMERALD', color: '#10b981', trait: 'Stable', meaning: 'A digital anchor. Your presence on Base provides a foundation of reliability.' },
@@ -94,8 +98,8 @@ export default function Home() {
     if (!myMood) return;
 
     const colorParam = myMood.color.replace('#', '');
-    const imageUrl = `https://aura-pulse.vercel.app/api/og?color=${colorParam}&trait=${myMood.trait}`;
-    const appUrl = 'https://aura-pulse.vercel.app';
+    const imageUrl = `${ROOT_URL}/api/og?color=${colorParam}&trait=${myMood.trait}`;
+    const appUrl = ROOT_URL;
     const shareText = `I established my onchain frequency on Aura Pulse 🔮\n\nState: ${myMood.trait} (${activityLevel})\n\nFrequency: ${myMood.meaning}`;
 
     try {
