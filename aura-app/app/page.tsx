@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react'; // Добавил useEffect
 import { ConnectWallet, Wallet, WalletDropdown, WalletDropdownDisconnect } from '@coinbase/onchainkit/wallet';
 import { Identity, Avatar, Name, Address } from '@coinbase/onchainkit/identity';
 import { useAccount, useSignMessage, useSwitchChain, useTransactionCount } from 'wagmi';
@@ -30,6 +30,11 @@ export default function Home() {
   
   const [stage, setStage] = useState<'idle' | 'syncing' | 'synced'>('idle');
   const [pulses, setPulses] = useState<{ id: number; x: number; y: number }[]>([]);
+
+  // КРИТИЧЕСКИЙ ФИКС: Сигнал оболочке Base App, что приложение готово
+  useEffect(() => {
+    sdk.actions.ready();
+  }, []);
 
   const handleGlobalTap = (e: React.MouseEvent | React.TouchEvent) => {
     const x = 'touches' in e ? e.touches[0].clientX : (e as React.MouseEvent).clientX;
@@ -86,7 +91,6 @@ Frequency: ${myMood.meaning}
 Check your aura on Base. 🔮`;
 
     try {
-      // ФИКС ДЛЯ БИЛДА: отключение правила any только для этой строки
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await (sdk.actions as any).share({
         text: shareText,
