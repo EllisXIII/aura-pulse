@@ -3,9 +3,8 @@
 import React, { useState, useMemo } from 'react';
 import { ConnectWallet, Wallet, WalletDropdown, WalletDropdownDisconnect } from '@coinbase/onchainkit/wallet';
 import { Identity, Avatar, Name, Address } from '@coinbase/onchainkit/identity';
-import { useAccount, useSendTransaction, useSwitchChain, useTransactionCount } from 'wagmi';
+import { useAccount, useSignMessage, useSwitchChain, useTransactionCount } from 'wagmi';
 import { base } from 'wagmi/chains';
-import { parseEther } from 'viem';
 
 const AURA_MOODS = [
   { name: 'VIOLET NEBULA', color: '#a855f7', trait: 'Intuitive', meaning: 'Your frequency aligns with the unseen. You perceive patterns within the digital noise.' },
@@ -25,8 +24,8 @@ const AURA_MOODS = [
 export default function Home() {
   const { isConnected, address, chainId } = useAccount();
   const { switchChain } = useSwitchChain();
-  const { sendTransactionAsync } = useSendTransaction();
-  const { data: txCount, refetch: refetchTxCount } = useTransactionCount({ address, chainId: base.id });
+  const { signMessageAsync } = useSignMessage();
+  const { data: txCount } = useTransactionCount({ address, chainId: base.id });
   
   const [stage, setStage] = useState<'idle' | 'syncing' | 'synced'>('idle');
   const [pulses, setPulses] = useState<{ id: number; x: number; y: number }[]>([]);
@@ -54,7 +53,7 @@ export default function Home() {
     return "Silent Observer";
   }, [txCount]);
 
-  const handleAction = async () => {
+  const handleRitual = async () => {
     if (!isConnected || !address) return;
 
     if (chainId !== base.id) {
@@ -64,18 +63,14 @@ export default function Home() {
 
     setStage('syncing');
     try {
-      await sendTransactionAsync({
-        account: address as `0x${string}`,
-        to: address as `0x${string}`,
-        value: parseEther('0'),
-        data: '0x417572612050756c73652052697475616c',
-        gas: BigInt(50000), // ФИКС: Используем конструктор вместо литерала 'n'
+      // БЕЗГАЗОВЫЙ РИТУАЛ: Подпись сообщения вместо транзакции
+      await signMessageAsync({
+        message: `Aura Pulse Ritual\n\nSynchronizing frequency for:\n${address}\n\nActivity Level: ${activityLevel}`,
       });
 
-      await refetchTxCount();
       setStage('synced');
     } catch (err) {
-      console.error("Tx error:", err);
+      console.error("Signature error:", err);
       setStage('idle');
     }
   };
@@ -114,7 +109,7 @@ export default function Home() {
                 <p className="generative-text">
                    <b>{myMood.trait} ({activityLevel}).</b> {myMood.meaning}
                 </p>
-                <span className="tx-count">Verified via {txCount || 0} Base interactions.</span>
+                <span className="tx-count">Verified via Cryptographic Pulse.</span>
               </div>
             ) : (
               <div className="branding">
@@ -124,7 +119,7 @@ export default function Home() {
             )}
 
             {isConnected && stage !== 'synced' && (
-              <button onClick={handleAction} className="ritual-btn" disabled={stage === 'syncing'}>
+              <button onClick={handleRitual} className="ritual-btn" disabled={stage === 'syncing'}>
                 {chainId !== base.id ? 'SWITCH TO BASE' : (stage === 'syncing' ? 'SYNCING...' : 'CHECK AURA')}
               </button>
             )}
@@ -140,7 +135,7 @@ export default function Home() {
         @keyframes pulseOut { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(65); opacity: 0; } }
         .ui-wrapper { position: relative; z-index: 10; height: 100dvh; display: flex; flex-direction: column; padding: 20px; box-sizing: border-box; }
         .header { display: flex; justify-content: flex-end; width: 100%; }
-        .mini-wallet-btn { background: rgba(0,0,0,0.6) !important; border: 1px solid rgba(255,255,255,0.1) !important; color: #fff !important; border-radius: 100px !important; padding: 8px 16px !important; }
+        .mini-wallet-btn { background: rgba(0,0,0,0.6) !important; border: 1px solid rgba(255,255,255,0.2) !important; color: #fff !important; border-radius: 100px !important; padding: 8px 16px !important; }
         .vibrant-name-fix { color: #fff !important; font-weight: 700 !important; margin-left: 8px !important; font-size: 14px !important; }
         .ritual-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 35px; margin-top: -30px; }
         .aura-focus { position: relative; width: 170px; height: 170px; display: flex; align-items: center; justify-content: center; }
