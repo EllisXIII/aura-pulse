@@ -5,6 +5,8 @@ import { ConnectWallet, Wallet, WalletDropdown, WalletDropdownDisconnect } from 
 import { Identity, Avatar, Name, Address } from '@coinbase/onchainkit/identity';
 import { useAccount, useSignMessage, useSwitchChain, useTransactionCount } from 'wagmi';
 import { base } from 'wagmi/chains';
+// 1. Импортируем MiniKit для шеринга
+import { miniapp } from '@farcaster/miniapp-sdk';
 
 const AURA_MOODS = [
   { name: 'VIOLET NEBULA', color: '#a855f7', trait: 'Intuitive', meaning: 'Your frequency aligns with the unseen. You perceive patterns within the digital noise.' },
@@ -55,23 +57,48 @@ export default function Home() {
 
   const handleRitual = async () => {
     if (!isConnected || !address) return;
-
     if (chainId !== base.id) {
       switchChain({ chainId: base.id });
       return;
     }
-
     setStage('syncing');
     try {
-      // БЕЗГАЗОВЫЙ РИТУАЛ: Подпись сообщения вместо транзакции
       await signMessageAsync({
         message: `Aura Pulse Ritual\n\nSynchronizing frequency for:\n${address}\n\nActivity Level: ${activityLevel}`,
       });
-
       setStage('synced');
     } catch (err) {
       console.error("Signature error:", err);
       setStage('idle');
+    }
+  };
+
+  // 2. Логика шеринга в Warpcast
+  const handleShare = async () => {
+    if (!myMood) return;
+
+    // Убираем решетку из цвета для URL
+    const colorParam = myMood.color.replace('#', '');
+    // Формируем ссылку на динамическую картинку
+    const imageUrl = `https://aura-pulse.vercel.app/api/og?color=${colorParam}&trait=${myMood.trait}`;
+    // Ссылка на приложение
+    const appUrl = 'https://aura-pulse.vercel.app';
+
+    const shareText = `I established my onchain connection on Aura Pulse.
+
+State: ${myMood.trait} (${activityLevel})
+Frequency: ${myMood.meaning}
+
+Check your aura on Base. 🔮`;
+
+    try {
+      // Вызываем нативный шеринг MiniKit
+      await miniapp.share({
+        text: shareText,
+        embeds: [imageUrl, appUrl], // Сначала картинка, потом ссылка
+      });
+    } catch (e) {
+      console.error('Share failed:', e);
     }
   };
 
@@ -104,12 +131,18 @@ export default function Home() {
 
           <div className="content-box">
             {stage === 'synced' ? (
+              // 3. Блок с результатами и кнопкой Share
               <div className="mood-result">
                 <h2 style={{ color: myMood.color }}>{myMood.name}</h2>
                 <p className="generative-text">
                    <b>{myMood.trait} ({activityLevel}).</b> {myMood.meaning}
                 </p>
                 <span className="tx-count">Verified via Cryptographic Pulse.</span>
+                
+                {/* Новая кнопка Share */}
+                <button onClick={handleShare} className="share-btn" style={{ '--btn-color': myMood.color } as React.CSSProperties}>
+                  SHARE RITUAL RESULTS
+                </button>
               </div>
             ) : (
               <div className="branding">
@@ -146,14 +179,35 @@ export default function Home() {
         .content-box { display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; gap: 10px; }
         .title { font-size: 1.6rem; font-weight: 200; letter-spacing: 12px; margin: 0; text-indent: 12px; }
         .subtitle { font-size: 10px; color: #888; letter-spacing: 4px; text-transform: uppercase; margin-top: 5px; margin-bottom: 25px; }
+        
+        /* Основная кнопка ритуала */
         .ritual-btn { background: #fff; color: #000; border: none; padding: 16px 52px; border-radius: 100px; font-weight: 900; font-size: 14px; cursor: pointer; transition: 0.2s; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
         .ritual-btn:active { transform: scale(0.95); }
-        .mood-result { animation: fadeIn 1s ease-out; max-width: 300px; }
+
+        /* Анимация появления результатов */
+        .mood-result { animation: fadeIn 1s ease-out; max-width: 300px; display: flex; flex-direction: column; align-items: center; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .mood-result h2 { font-size: 1.5rem; letter-spacing: 3px; margin: 0 0 10px 0; text-transform: uppercase; }
         .generative-text { font-size: 13px; color: #ccc; margin: 0; line-height: 1.5; }
         .generative-text b { color: #fff; text-transform: uppercase; }
         .tx-count { font-size: 10px; color: #666; margin-top: 15px; display: block; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* 4. Стиль новой кнопки Share (контурная, цветная) */
+        .share-btn {
+          margin-top: 25px;
+          background: transparent;
+          color: var(--btn-color);
+          border: 2px solid var(--btn-color);
+          padding: 12px 30px;
+          border-radius: 100px;
+          font-weight: 800;
+          font-size: 12px;
+          cursor: pointer;
+          transition: 0.2s;
+          letter-spacing: 1px;
+          box-shadow: 0 0 15px var(--btn-color) inset;
+        }
+        .share-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.1); }
       `}</style>
     </main>
   );
